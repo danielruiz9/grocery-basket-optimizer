@@ -1,0 +1,46 @@
+item,category,store,price,unit,package_size,flyer_week
+eggs,dairy,No Frills,3.99,dozen,12,2026-07-08
+eggs,dairy,Walmart,4.29,dozen,12,2026-07-08
+eggs,dairy,Food Basics,3.79,dozen,12,2026-07-08
+milk,dairy,No Frills,5.89,4L,4,2026-07-08
+milk,dairy,Walmart,5.69,4L,4,2026-07-08
+milk,dairy,Food Basics,5.99,4L,4,2026-07-08
+bread,bakery,No Frills,2.99,loaf,1,2026-07-08
+bread,bakery,Walmart,2.79,loaf,1,2026-07-08
+bread,bakery,Food Basics,3.19,loaf,1,2026-07-08
+chicken breast,meat,No Frills,12.99,kg,1,2026-07-08
+chicken breast,meat,Walmart,13.49,kg,1,2026-07-08
+chicken breast,meat,Food Basics,11.99,kg,1,2026-07-08
+ground beef,meat,No Frills,10.99,kg,1,2026-07-08
+ground beef,meat,Walmart,11.49,kg,1,2026-07-08
+ground beef,meat,Food Basics,9.99,kg,1,2026-07-08
+pasta,pantry,No Frills,1.99,box,1,2026-07-08
+pasta,pantry,Walmart,2.49,box,1,2026-07-08
+pasta,pantry,Food Basics,1.79,box,1,2026-07-08
+rice,pantry,No Frills,5.99,bag,1,2026-07-08
+rice,pantry,Walmart,6.49,bag,1,2026-07-08
+rice,pantry,Food Basics,5.49,bag,1,2026-07-08
+apples,produce,No Frills,4.99,bag,1,2026-07-08
+apples,produce,Walmart,5.49,bag,1,2026-07-08
+apples,produce,Food Basics,4.49,bag,1,2026-07-08
+bananas,produce,No Frills,1.69,kg,1,2026-07-08
+bananas,produce,Walmart,1.59,kg,1,2026-07-08
+bananas,produce,Food Basics,1.79,kg,1,2026-07-08
+potatoes,produce,No Frills,4.99,bag,1,2026-07-08
+potatoes,produce,Walmart,5.29,bag,1,2026-07-08
+potatoes,produce,Food Basics,4.79,bag,1,2026-07-08
+yogurt,dairy,No Frills,3.99,tub,1,2026-07-08
+yogurt,dairy,Walmart,4.49,tub,1,2026-07-08
+yogurt,dairy,Food Basics,3.79,tub,1,2026-07-08
+cheese,dairy,No Frills,5.49,block,1,2026-07-08
+cheese,dairy,Walmart,5.99,block,1,2026-07-08
+cheese,dairy,Food Basics,4.99,block,1,2026-07-08
+cereal,pantry,No Frills,4.49,box,1,2026-07-08
+cereal,pantry,Walmart,3.99,box,1,2026-07-08
+cereal,pantry,Food Basics,4.29,box,1,2026-07-08
+tomatoes,produce,No Frills,3.99,pack,1,2026-07-08
+tomatoes,produce,Walmart,4.29,pack,1,2026-07-08
+tomatoes,produce,Food Basics,3.49,pack,1,2026-07-08
+frozen vegetables,frozen,No Frills,2.99,bag,1,2026-07-08
+frozen vegetables,frozen,Walmart,2.79,bag,1,2026-07-08
+frozen vegetables,frozen,Food Basics,3.29,bag,1,2026-07-08
