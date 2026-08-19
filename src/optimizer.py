@@ -1,0 +1,207 @@
+from itertools import combinations
+from pathlib import Path
+
+import pandas as pd
+
+
+def prepare_basket_data(
+    prices: pd.DataFrame,
+    basket: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Validate the input tables and merge basket quantities with store prices.
+    """
+
+    required_price_columns = {"item", "store", "price"}
+    required_basket_columns = {"item", "quantity"}
+
+    missing_price_columns = required_price_columns - set(prices.columns)
+    missing_basket_columns = required_basket_columns - set(basket.columns)
+
+    if missing_price_columns:
+        raise ValueError(
+            f"Prices data is missing columns: {sorted(missing_price_columns)}"
+        )
+
+    if missing_basket_columns:
+        raise ValueError(
+            f"Basket data is missing columns: {sorted(missing_basket_columns)}"
+        )
+
+    if basket.empty:
+        raise ValueError("The grocery basket cannot be empty.")
+
+    if (basket["quantity"] <= 0).any():
+        raise ValueError("Every basket quantity must be greater than zero.")
+
+    prices_clean = prices.copy()
+    basket_clean = basket.copy()
+
+    # Standardize item names for more reliable matching
+    prices_clean["item"] = prices_clean["item"].str.strip().str.lower()
+    basket_clean["item"] = basket_clean["item"].str.strip().str.lower()
+
+    # Combine duplicate basket items
+    basket_clean = (
+        basket_clean
+        .groupby("item", as_index=False)["quantity"]
+        .sum()
+    )
+
+    unavailable_items = sorted(
+        set(basket_clean["item"]) - set(prices_clean["item"])
+    )
+
+    if unavailable_items:
+        raise ValueError(
+            f"No price data was found for: {unavailable_items}"
+        )
+
+    basket_prices = basket_clean.merge(
+        prices_clean,
+        on="item",
+        how="left"
+    )
+
+    basket_prices["total_item_cost"] = (
+        basket_prices["quantity"] * basket_prices["price"]
+    )
+
+    return basket_prices
+
+def calculate_store_combo(
+    basket_prices: pd.DataFrame,
+    selected_stores: tuple[str, ...]
+) -> dict:
+    """
+    Assign each basket item to its cheapest available store
+    within the selected combination.
+    """
+
+    combo_data = basket_prices[
+        basket_prices["store"].isin(selected_stores)
+    ].copy()
+
+    shopping_plan = (
+        combo_data
+        .sort_values(["item", "total_item_cost", "store"])
+        .groupby("item", as_index=False)
+        .first()
+    )
+
+    required_items = set(basket_prices["item"].unique())
+    covered_items = set(shopping_plan["item"])
+
+    if covered_items != required_items:
+        return {
+            "stores": selected_stores,
+            "total_cost": float("inf"),
+            "shopping_plan": None
+        }
+
+    return {
+        "stores": selected_stores,
+        "total_cost": shopping_plan["total_item_cost"].sum(),
+        "shopping_plan": shopping_plan
+    }
+
+def optimize_basket(
+    prices: pd.DataFrame,
+    basket: pd.DataFrame,
+    max_stores: int = 2,
+    savings_threshold: float = 5.00
+) -> dict:
+    """
+    Optimize a grocery basket for one or two stores.
+    """
+
+    if max_stores not in {1, 2}:
+        raise ValueError("max_stores must currently be either 1 or 2.")
+
+    if savings_threshold < 0:
+        raise ValueError("savings_threshold cannot be negative.")
+
+    basket_prices = prepare_basket_data(prices, basket)
+    stores = sorted(basket_prices["store"].dropna().unique())
+
+    # Test every single-store option
+    single_store_results = [
+        calculate_store_combo(basket_prices, (store,))
+        for store in stores
+    ]
+
+    valid_single_results = [
+        result
+        for result in single_store_results
+        if result["total_cost"] != float("inf")
+    ]
+
+    if not valid_single_results:
+        raise ValueError(
+            "No single store contains every item in the basket."
+        )
+
+    best_single = min(
+        valid_single_results,
+        key=lambda result: result["total_cost"]
+    )
+
+    # Users allowing only one store stop here
+    if max_stores == 1:
+        return {
+            "best_single": best_single,
+            "best_multi": None,
+            "savings": 0.0,
+            "worth_it": False,
+            "recommended_option": best_single,
+            "recommendation": (
+                f"Shop at {best_single['stores'][0]}."
+            )
+        }
+
+    # Test every two-store combination
+    two_store_results = [
+        calculate_store_combo(basket_prices, store_pair)
+        for store_pair in combinations(stores, 2)
+    ]
+
+    valid_two_store_results = [
+        result
+        for result in two_store_results
+        if result["total_cost"] != float("inf")
+    ]
+
+    if not valid_two_store_results:
+        raise ValueError(
+            "No valid two-store combination covers the full basket."
+        )
+
+    best_two = min(
+        valid_two_store_results,
+        key=lambda result: result["total_cost"]
+    )
+
+    savings = best_single["total_cost"] - best_two["total_cost"]
+    worth_it = savings >= savings_threshold
+
+    if worth_it:
+        recommended_option = best_two
+        recommendation = (
+            "Visit two stores because the savings meet or exceed "
+            "your minimum threshold."
+        )
+    else:
+        recommended_option = best_single
+        recommendation = (
+            "Stick with one store because the extra savings do not "
+            "meet your minimum threshold."
+        )
+
+    return {
+        "best_single": best_single,
+        "best_multi": best_two,
+        "savings": savings,
+        "worth_it": worth_it,
+        "recommended_option": recommended_option,
+        "recommendation": recommendation
+    }
