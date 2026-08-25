@@ -141,15 +141,24 @@ def optimize_basket(
             "No single store contains every item in the basket."
         )
 
-    best_single = min(
+    valid_single_results = sorted(
         valid_single_results,
         key=lambda result: result["total_cost"]
+    )
+
+    best_single = valid_single_results[0]
+
+    second_best_single = (
+        valid_single_results[1]
+        if len(valid_single_results) > 1
+        else None
     )
 
     # Users allowing only one store stop here
     if max_stores == 1:
         return {
             "best_single": best_single,
+            "second_best_single": second_best_single,
             "best_multi": None,
             "savings": 0.0,
             "worth_it": False,
@@ -182,7 +191,7 @@ def optimize_basket(
     )
 
     savings = best_single["total_cost"] - best_two["total_cost"]
-    worth_it = savings >= savings_threshold
+    worth_it = savings > 0 and savings >= savings_threshold
 
     if worth_it:
         recommended_option = best_two
@@ -199,6 +208,7 @@ def optimize_basket(
 
     return {
         "best_single": best_single,
+        "second_best_single": second_best_single,
         "best_multi": best_two,
         "savings": savings,
         "worth_it": worth_it,
