@@ -1,6 +1,7 @@
 from itertools import combinations
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 
@@ -33,6 +34,24 @@ def prepare_basket_data(
 
     if (basket["quantity"] <= 0).any():
         raise ValueError("Every basket quantity must be greater than zero.")
+
+    price_values = prices["price"]
+
+    if price_values.isna().any():
+        raise ValueError("Prices data cannot contain null price values.")
+
+    if (
+        not pd.api.types.is_numeric_dtype(price_values)
+        or pd.api.types.is_bool_dtype(price_values)
+        or pd.api.types.is_complex_dtype(price_values)
+    ):
+        raise ValueError("Prices data column 'price' must be numeric.")
+
+    if not np.isfinite(price_values.to_numpy()).all():
+        raise ValueError("Prices data must contain only finite price values.")
+
+    if (price_values < 0).any():
+        raise ValueError("Prices data cannot contain negative price values.")
 
     prices_clean = prices.copy()
     basket_clean = basket.copy()
