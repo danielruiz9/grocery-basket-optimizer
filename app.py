@@ -22,9 +22,19 @@ st.write(
     "and compare whether one or two stores gives you the better deal."
 )
 
+st.caption(
+    "Demo using static, illustrative sample data for 15 items across "
+    "three stores. Prices are not live."
+)
+
 st.divider()
 
-st.header("1. Build Your Basket")
+st.header("Build Your Basket")
+
+st.caption(
+    "Quantity represents the number of packages or units of the listed "
+    "sample product and multiplies its listed price."
+)
 
 available_items = sorted(prices["item"].unique())
 
@@ -60,8 +70,11 @@ if not basket.empty:
     )
 
     with st.expander("View basket details"):
+        basket_display = basket.copy()
+        basket_display["item"] = basket_display["item"].str.title()
+
         st.dataframe(
-            basket,
+            basket_display,
             use_container_width=True,
             hide_index=True
         )
@@ -71,23 +84,33 @@ with st.sidebar:
 
     max_stores = st.radio(
         "Maximum number of stores:",
-        options=[1, 2]
+        options=[1, 2],
+        format_func=lambda value: (
+            "One store" if value == 1 else "Up to two stores"
+        )
     )
 
-    savings_threshold = st.number_input(
-        "Minimum savings needed to justify an extra store:",
-        min_value=0.0,
-        value=5.0,
-        step=0.5,
-        format="%.2f"
-    )
+    savings_threshold = 5.0
 
-    st.caption(
-        "The optimizer will only recommend another store if "
-        "the extra savings meet your threshold."
-    )
+    if max_stores == 2:
+        savings_threshold = st.number_input(
+            "Minimum savings needed to justify an extra store:",
+            min_value=0.0,
+            value=5.0,
+            step=0.5,
+            format="%.2f"
+        )
 
-if st.button("Optimize Basket"):
+        st.caption(
+            "The optimizer will only recommend another store if "
+            "the extra savings meet your threshold."
+        )
+
+if st.button(
+    "Optimize Basket",
+    type="primary",
+    use_container_width=True
+):
     if basket.empty:
         st.warning("Please select at least one grocery item.")
     else:
@@ -107,7 +130,7 @@ if st.button("Optimize Basket"):
             recommended_stores = " + ".join(recommended["stores"])
             recommended_cost = recommended["total_cost"]
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns([2, 1, 1])
 
             col1.metric(
                 "Recommended Store Plan",
@@ -155,7 +178,38 @@ if st.button("Optimize Basket"):
                      f"${result['savings']:.2f}"
                 )
 
-            st.info(result["recommendation"])
+            if (
+                result["best_single"] is not None
+                and result["best_multi"] is not None
+            ):
+                savings = result["savings"]
+
+                if result["worth_it"]:
+                    decision_message = (
+                        f"The two-store option saves \\${savings:.2f} versus "
+                        f"the best single store, meeting your "
+                        f"\\${savings_threshold:.2f} threshold. "
+                        f"Recommendation: shop at {recommended_stores}."
+                    )
+                elif savings <= 0:
+                    decision_message = (
+                        f"The two-store option saves \\${savings:.2f} versus "
+                        f"the best single store. Your threshold is "
+                        f"\\${savings_threshold:.2f}, but the optimizer "
+                        "requires positive savings. "
+                        f"Recommendation: shop at {recommended_stores}."
+                    )
+                else:
+                    decision_message = (
+                        f"The two-store option saves \\${savings:.2f} versus "
+                        f"the best single store, below your "
+                        f"\\${savings_threshold:.2f} threshold. "
+                        f"Recommendation: shop at {recommended_stores}."
+                    )
+
+                st.info(decision_message)
+            else:
+                st.info(result["recommendation"])
 
             if (
                 result["best_single"] is not None
@@ -209,6 +263,8 @@ if st.button("Optimize Basket"):
                 "price": "Unit Price",
                 "total_item_cost": "Item Total"
             })
+
+            shopping_plan["Item"] = shopping_plan["Item"].str.title()
 
             shopping_plan["Unit Price"] = shopping_plan["Unit Price"].map(
                 "${:.2f}".format
