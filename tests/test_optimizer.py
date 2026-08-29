@@ -60,5 +60,63 @@ class ExistingBehaviorTests(unittest.TestCase):
         self.assertFalse(result["worth_it"])
 
 
+class StoreCoverageTests(unittest.TestCase):
+    def test_uses_two_stores_when_no_single_store_covers_basket(self):
+        prices = pd.DataFrame({
+            "item": ["milk", "bread"],
+            "store": ["Store A", "Store B"],
+            "price": [3.0, 2.0],
+        })
+        basket = pd.DataFrame({
+            "item": ["milk", "bread"],
+            "quantity": [1, 2],
+        })
+
+        result = optimize_basket(prices, basket, max_stores=2)
+
+        self.assertIsNone(result["best_single"])
+        self.assertEqual(result["best_multi"]["stores"], ("Store A", "Store B"))
+        self.assertEqual(result["recommended_option"], result["best_multi"])
+        self.assertAlmostEqual(result["best_multi"]["total_cost"], 7.0)
+        self.assertIsNone(result["savings"])
+        self.assertTrue(result["worth_it"])
+
+    def test_falls_back_to_single_store_when_no_pair_exists(self):
+        prices = pd.DataFrame({
+            "item": ["milk", "bread"],
+            "store": ["Store A", "Store A"],
+            "price": [3.0, 2.0],
+        })
+        basket = pd.DataFrame({
+            "item": ["milk", "bread"],
+            "quantity": [1, 1],
+        })
+
+        result = optimize_basket(prices, basket, max_stores=2)
+
+        self.assertEqual(result["best_single"]["stores"], ("Store A",))
+        self.assertIsNone(result["best_multi"])
+        self.assertEqual(result["recommended_option"], result["best_single"])
+        self.assertEqual(result["savings"], 0.0)
+        self.assertFalse(result["worth_it"])
+
+    def test_raises_when_neither_one_nor_two_stores_cover_basket(self):
+        prices = pd.DataFrame({
+            "item": ["milk", "bread", "eggs"],
+            "store": ["Store A", "Store B", "Store C"],
+            "price": [3.0, 2.0, 4.0],
+        })
+        basket = pd.DataFrame({
+            "item": ["milk", "bread", "eggs"],
+            "quantity": [1, 1, 1],
+        })
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "No one-store or two-store combination covers the full basket",
+        ):
+            optimize_basket(prices, basket, max_stores=2)
+
+
 if __name__ == "__main__":
     unittest.main()

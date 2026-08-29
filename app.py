@@ -1,10 +1,13 @@
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
 from src.optimizer import optimize_basket
 
 
-prices = pd.read_csv("data/sample_prices.csv")
+prices_path = Path(__file__).resolve().parent / "data" / "sample_prices.csv"
+prices = pd.read_csv(prices_path)
 
 st.set_page_config(
     page_title="Grocery Basket Optimizer",
@@ -116,21 +119,36 @@ if st.button("Optimize Basket"):
                 f"${recommended_cost:.2f}"
             )
 
-            if max_stores == 1 and result["second_best_single"] is not None:
-                second_best = result["second_best_single"]
+            if max_stores == 1:
+                if result["second_best_single"] is not None:
+                    second_best = result["second_best_single"]
 
-                single_store_savings = (
-                    second_best["total_cost"]
-                    - result["best_single"]["total_cost"]
-                )
+                    single_store_savings = (
+                        second_best["total_cost"]
+                        - result["best_single"]["total_cost"]
+                    )
 
-                next_best_store = second_best["stores"][0]
+                    next_best_store = second_best["stores"][0]
 
+                    col3.metric(
+                        f"Savings vs {next_best_store}",
+                        f"${single_store_savings:.2f}"
+                    )
+                else:
+                    col3.metric(
+                        "Alternative Single Store",
+                        "Unavailable"
+                    )
+            elif result["best_single"] is None:
                 col3.metric(
-                    f"Savings vs {next_best_store}",
-                    f"${single_store_savings:.2f}"
+                    "Single-Store Option",
+                    "Unavailable"
                 )
-
+            elif result["best_multi"] is None:
+                col3.metric(
+                    "Two-Store Option",
+                    "Unavailable"
+                )
             else:
                 col3.metric(
                     "Savings vs Best Single Store",
@@ -139,7 +157,10 @@ if st.button("Optimize Basket"):
 
             st.info(result["recommendation"])
 
-            if result["best_multi"] is not None:
+            if (
+                result["best_single"] is not None
+                and result["best_multi"] is not None
+            ):
                 st.subheader("Option Comparison")
 
                 comparison = pd.DataFrame({

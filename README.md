@@ -24,13 +24,22 @@ The MVP will calculate:
 
 ```text
 grocery-basket-optimizer/
+├── app.py
 ├── data/
-│   ├── sample_prices.csv
-│   └── sample_basket.csv
+│   ├── sample_basket.csv
+│   └── sample_prices.csv
 ├── notebooks/
-│   └── optimizer_v0.ipynb
+│   ├── optimizer_v0.ipynb
+│   └── optimizer_v1.ipynb
+├── src/
+│   ├── __init__.py
+│   └── optimizer.py
+├── tests/
+│   └── test_optimizer.py
 ├── README.md
+├── requirements.txt
 └── product_spec.md
+```
 
 ## MVP Results
 

@@ -155,17 +155,16 @@ def optimize_basket(
         if result["total_cost"] != float("inf")
     ]
 
-    if not valid_single_results:
-        raise ValueError(
-            "No single store contains every item in the basket."
-        )
-
     valid_single_results = sorted(
         valid_single_results,
         key=lambda result: result["total_cost"]
     )
 
-    best_single = valid_single_results[0]
+    best_single = (
+        valid_single_results[0]
+        if valid_single_results
+        else None
+    )
 
     second_best_single = (
         valid_single_results[1]
@@ -175,6 +174,11 @@ def optimize_basket(
 
     # Users allowing only one store stop here
     if max_stores == 1:
+        if best_single is None:
+            raise ValueError(
+                "No single store contains every item in the basket."
+            )
+
         return {
             "best_single": best_single,
             "second_best_single": second_best_single,
@@ -199,15 +203,41 @@ def optimize_basket(
         if result["total_cost"] != float("inf")
     ]
 
-    if not valid_two_store_results:
+    if best_single is None and not valid_two_store_results:
         raise ValueError(
-            "No valid two-store combination covers the full basket."
+            "No one-store or two-store combination covers the full basket."
         )
+
+    if not valid_two_store_results:
+        return {
+            "best_single": best_single,
+            "second_best_single": second_best_single,
+            "best_multi": None,
+            "savings": 0.0,
+            "worth_it": False,
+            "recommended_option": best_single,
+            "recommendation": (
+                f"Shop at {best_single['stores'][0]}."
+            )
+        }
 
     best_two = min(
         valid_two_store_results,
         key=lambda result: result["total_cost"]
     )
+
+    if best_single is None:
+        return {
+            "best_single": None,
+            "second_best_single": None,
+            "best_multi": best_two,
+            "savings": None,
+            "worth_it": True,
+            "recommended_option": best_two,
+            "recommendation": (
+                "Visit two stores because no single store covers the full basket."
+            )
+        }
 
     savings = best_single["total_cost"] - best_two["total_cost"]
     worth_it = savings > 0 and savings >= savings_threshold
