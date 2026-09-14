@@ -1,0 +1,10 @@
+product_name,comparison_group,brand,category,store,package_size,package_unit,price,standardized_unit,date_observed
+Cheddar Cheese,cheddar_cheese,Black Diamond,Dairy,Walmart,400,g,5.47,100g,2026-09-11
+Cheddar Cheese,cheddar_cheese,No Name,Dairy,No Frills,450,g,5.99,100g,2026-09-11
+Cheddar Cheese,cheddar_cheese,Selection,Dairy,Food Basics,400,g,5.49,100g,2026-09-11
+2% Milk,2_percent_milk,Neilson,Dairy,Walmart,4,L,6.49,1L,2026-09-11
+2% Milk,2_percent_milk,Beatrice,Dairy,No Frills,4,L,6.29,1L,2026-09-11
+Large Eggs,large_eggs,Great Value,Dairy,Walmart,12,count,3.78,1unit,2026-09-11
+Large Eggs,large_eggs,No Name,Dairy,No Frills,18,count,5.49,1unit,2026-09-11
+Orange Juice,orange_juice,Tropicana,Beverages,Walmart,1540,mL,5.97,1L,2026-09-11
+Orange Juice,orange_juice,Selection,Beverages,Food Basics,1.75,L,5.99,1L,2026-09-11
