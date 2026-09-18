@@ -1,9 +1,81 @@
+import pandas as pd
+
+
+def _is_variable_weight(value):
+    if pd.isna(value):
+        return False
+
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+
+        if normalized in {"true", "yes", "1"}:
+            return True
+
+        if normalized in {"false", "no", "0", ""}:
+            return False
+
+        raise ValueError(
+            "is_variable_weight must be a boolean value."
+        )
+
+    return bool(value)
+
+
+def _calculate_from_listed_unit_price(
+    listed_unit_price,
+    listed_unit,
+    standardized_unit
+):
+    if pd.isna(listed_unit_price):
+        raise ValueError(
+            "Variable-weight products require a listed unit price."
+        )
+
+    if listed_unit_price < 0:
+        raise ValueError("Listed unit price cannot be negative.")
+
+    if pd.isna(listed_unit) or not str(listed_unit).strip():
+        raise ValueError(
+            "Variable-weight products require a listed unit."
+        )
+
+    listed_unit = str(listed_unit).lower().strip()
+    standardized_unit = standardized_unit.lower().strip()
+
+    # Accept unit labels captured either as "kg" or as displayed "$ / kg".
+    if listed_unit.startswith("$"):
+        listed_unit = listed_unit[1:].strip()
+
+    if listed_unit.startswith("/"):
+        listed_unit = listed_unit[1:].strip()
+
+    if listed_unit == standardized_unit:
+        return listed_unit_price
+
+    return calculate_price_per_standard_unit(
+        price=listed_unit_price,
+        package_size=1,
+        package_unit=listed_unit,
+        standardized_unit=standardized_unit
+    )
+
+
 def calculate_price_per_standard_unit(
     price,
     package_size,
     package_unit,
-    standardized_unit
+    standardized_unit,
+    is_variable_weight=False,
+    listed_unit_price=None,
+    listed_unit=None
 ):
+    if _is_variable_weight(is_variable_weight):
+        return _calculate_from_listed_unit_price(
+            listed_unit_price,
+            listed_unit,
+            standardized_unit
+        )
+
     if package_size <= 0:
         raise ValueError("Package size must be greater than zero.")
 
@@ -34,6 +106,7 @@ def calculate_price_per_standard_unit(
         f"Unsupported unit combination: {package_unit} -> {standardized_unit}"
     )
 
+
 def add_standardized_prices(prices):
     prices = prices.copy()
 
@@ -42,12 +115,16 @@ def add_standardized_prices(prices):
             row["price"],
             row["package_size"],
             row["package_unit"],
-            row["standardized_unit"]
+            row["standardized_unit"],
+            row.get("is_variable_weight", False),
+            row.get("listed_unit_price"),
+            row.get("listed_unit")
         ),
         axis=1
     )
 
     return prices
+
 
 def get_best_value_by_group(prices):
     required_columns = {

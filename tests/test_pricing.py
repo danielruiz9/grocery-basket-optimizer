@@ -60,6 +60,81 @@ class TestPricing(unittest.TestCase):
 
         self.assertAlmostEqual(result, 0.40)
 
+    def test_fixed_package_ignores_listed_unit_price(self):
+        result = calculate_price_per_standard_unit(
+            price=14.00,
+            package_size=900,
+            package_unit="g",
+            standardized_unit="100g",
+            is_variable_weight=False,
+            listed_unit_price=15.41,
+            listed_unit="kg",
+        )
+
+        self.assertAlmostEqual(result, 14.00 / 900 * 100)
+
+    def test_variable_weight_uses_listed_unit_price(self):
+        result = calculate_price_per_standard_unit(
+            price=14.00,
+            package_size=900,
+            package_unit="g",
+            standardized_unit="100g",
+            is_variable_weight=True,
+            listed_unit_price=15.41,
+            listed_unit="$ / kg",
+        )
+
+        self.assertAlmostEqual(result, 1.541)
+
+    def test_variable_weight_requires_listed_unit_price(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "require a listed unit price",
+        ):
+            calculate_price_per_standard_unit(
+                price=14.00,
+                package_size=900,
+                package_unit="g",
+                standardized_unit="100g",
+                is_variable_weight=True,
+                listed_unit_price=None,
+                listed_unit="kg",
+            )
+
+    def test_best_value_compares_fixed_and_variable_weight_products(self):
+        prices = pd.DataFrame(
+            {
+                "product_name": ["Chicken Breast", "Chicken Breast"],
+                "comparison_group": ["chicken_breast", "chicken_breast"],
+                "brand": ["Brand A", "Brand B"],
+                "store": ["Fixed Package Store", "Variable Weight Store"],
+                "product_form": ["fixed_package", "variable_weight"],
+                "is_variable_weight": [False, True],
+                "package_size": [900, 900],
+                "package_unit": ["g", "g"],
+                "price": [14.00, 14.00],
+                "listed_unit_price": [None, 15.41],
+                "listed_unit": [None, "kg"],
+                "standardized_unit": ["100g", "100g"],
+            }
+        )
+
+        standardized = add_standardized_prices(prices)
+        result = get_best_value_by_group(standardized)
+
+        fixed_price = standardized.loc[
+            standardized["store"] == "Fixed Package Store",
+            "price_per_standard_unit",
+        ].iloc[0]
+        variable_price = standardized.loc[
+            standardized["store"] == "Variable Weight Store",
+            "price_per_standard_unit",
+        ].iloc[0]
+
+        self.assertAlmostEqual(fixed_price, 14.00 / 900 * 100)
+        self.assertAlmostEqual(variable_price, 1.541)
+        self.assertEqual(result.iloc[0]["store"], "Variable Weight Store")
+
     def test_unsupported_unit_combination_raises_error(self):
         with self.assertRaises(ValueError):
             calculate_price_per_standard_unit(
