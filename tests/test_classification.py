@@ -114,6 +114,13 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(granny_smith["product_form"], "loose")
         self.assertEqual(gala["attributes"], ["organic"])
 
+    def test_does_not_classify_apple_cereal_as_fresh_apples(self):
+        result = classify_product(
+            "Cheerios Cereal Apple Cinnamon Family Size"
+        )
+
+        self.assertEqual(result["comparison_group"], "unsupported")
+
     def test_classifies_bananas_without_matching_banana_bread(self):
         bananas = classify_product("Organic Bananas")
         banana_bread = classify_product("Banana Bread")
@@ -121,6 +128,32 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(bananas["comparison_group"], "fresh_bananas")
         self.assertEqual(bananas["product_form"], "loose")
         self.assertEqual(banana_bread["comparison_group"], "sliced_bread")
+
+    def test_does_not_classify_processed_banana_products_as_fresh(self):
+        processed_titles = (
+            "Banana - Sliced",
+            "Gerber Puffs, Banana Flavour, Snack for Babies 8 Mo & Up",
+            "Nature's Bananas, Frozen Fresh in Peanut Butter & Dark Chocolate",
+            "Golden Saba Steamed Banana",
+            "Pink Guava, Mango, and Banana Fruit Blend",
+            "Pineapple, Banana, and Mango Fruit Blend",
+        )
+
+        for title in processed_titles:
+            with self.subTest(title=title):
+                result = classify_product(title)
+                self.assertEqual(
+                    result["comparison_group"],
+                    "unsupported",
+                )
+
+    def test_classifies_cooking_bananas_separately_from_fresh_bananas(self):
+        cooking = classify_product("Green Cooking Bananas")
+        fresh = classify_product("Bananas, Bunch")
+
+        self.assertEqual(cooking["product_family"], "bananas")
+        self.assertEqual(cooking["comparison_group"], "cooking_bananas")
+        self.assertEqual(fresh["comparison_group"], "fresh_bananas")
 
     def test_classifies_plantains_as_distinct_produce(self):
         result = classify_product(
@@ -141,6 +174,18 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(spaghetti["attributes"], ["gluten_free"])
         self.assertEqual(penne["attributes"], ["whole_wheat"])
 
+    def test_classifies_standalone_rotini_and_cavatappi_as_dry_pasta(self):
+        rotini = classify_product("Rotini")
+        cavatappi = classify_product("Cavatappi")
+
+        self.assertEqual(rotini["comparison_group"], "dry_pasta")
+        self.assertEqual(cavatappi["comparison_group"], "dry_pasta")
+
+    def test_does_not_classify_macaroni_and_cheese_as_dry_pasta(self):
+        result = classify_product("White Cheddar Macaroni & Cheese")
+
+        self.assertEqual(result["comparison_group"], "unsupported")
+
     def test_distinguishes_fresh_and_filled_pasta(self):
         fresh = classify_product("Fresh Linguine Pasta")
         filled = classify_product("Cheese Ravioli")
@@ -160,6 +205,22 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(bagels["product_family"], "bread")
         self.assertEqual(baguette["product_family"], "bread")
 
+    def test_classifies_obvious_artisan_bread_names(self):
+        for title in (
+            "Sourdough Bistro",
+            "Classic White Bistro",
+            "Pane Rustico",
+        ):
+            with self.subTest(title=title):
+                result = classify_product(title)
+                self.assertEqual(result["category"], "bakery")
+                self.assertEqual(result["product_family"], "bread")
+                self.assertEqual(
+                    result["comparison_group"],
+                    "artisan_bread",
+                )
+                self.assertEqual(result["product_form"], "loaf")
+
     def test_preserves_cheese_type_across_product_forms(self):
         block = classify_product("Old Cheddar Cheese Block")
         shredded = classify_product("Dairy-Free Cheddar Style Shreds")
@@ -177,6 +238,12 @@ class TestProductClassification(unittest.TestCase):
 
         self.assertEqual(result["comparison_group"], "cheddar_cheese")
         self.assertEqual(result["product_form"], "block")
+
+    def test_classifies_mozzarella_ball_as_ball_not_sliced(self):
+        result = classify_product("Fresh Mozzarella Slice Ball")
+
+        self.assertEqual(result["comparison_group"], "mozzarella_cheese")
+        self.assertEqual(result["product_form"], "ball")
 
     def test_returns_explicit_unknown_for_unsupported_product(self):
         result = classify_product("Frozen Pepperoni Pizza")

@@ -25,6 +25,11 @@ PASTA_TERMS = {
     "spaghetti",
     "penne",
     "macaroni",
+    "rotini",
+    "cavatappi",
+    "farfalle",
+    "cellentani",
+    "conchiglie",
     "fusilli",
     "linguine",
     "fettuccine",
@@ -32,6 +37,40 @@ PASTA_TERMS = {
     "tortellini",
     "noodle",
     "noodles",
+}
+
+
+EXPECTED_STANDARDIZED_UNITS = {
+    "chicken_breast": "100g",
+    "chicken_breast_bone_in": "100g",
+    "chicken_breast_boneless": "100g",
+    "breaded_chicken_breast": "100g",
+    "chicken_breast_strips": "100g",
+    "bagels": "100g",
+    "baguettes": "100g",
+    "sliced_bread": "100g",
+    "artisan_bread": "100g",
+    "dry_pasta": "100g",
+    "fresh_pasta": "100g",
+    "filled_pasta": "100g",
+    "liquid_egg_product": "1L",
+    "extra_large_eggs": "1unit",
+    "jumbo_eggs": "1unit",
+    "large_eggs": "1unit",
+    "medium_eggs": "1unit",
+    "small_eggs": "1unit",
+    "shell_eggs_unspecified_size": "1unit",
+    "fresh_apples": "100g",
+    "fresh_bananas": "100g",
+    "cooking_bananas": "100g",
+    "fresh_plantains": "100g",
+    "cream_cheese": "100g",
+    "cottage_cheese": "100g",
+    "cheddar_cheese": "100g",
+    "mozzarella_cheese": "100g",
+    "swiss_cheese": "100g",
+    "marble_cheese": "100g",
+    "cheese_unspecified_type": "100g",
 }
 
 
@@ -134,12 +173,31 @@ def _classify_bread(normalized_name, tokens):
             "bakery", "bread", "sliced_bread", "sliced_loaf", attributes
         )
 
+    artisan_bread_names = {
+        "sourdough bistro",
+        "classic white bistro",
+        "pane rustico",
+    }
+
+    if any(name in normalized_name for name in artisan_bread_names):
+        return _classification(
+            "bakery", "bread", "artisan_bread", "loaf", attributes
+        )
+
     return None
 
 
 def _classify_pasta(normalized_name, tokens):
     if not PASTA_TERMS & tokens:
         return None
+
+    if (
+        "macaroni and cheese" in normalized_name
+        or "macaroni cheese" in normalized_name
+        or "mac and cheese" in normalized_name
+        or "mac n cheese" in normalized_name
+    ):
+        return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
 
@@ -195,7 +253,14 @@ def _classify_produce(normalized_name, tokens):
     attributes = _extract_attributes(normalized_name)
 
     if {"apple", "apples"} & tokens:
-        excluded_forms = {"cider", "dried", "juice", "pie", "sauce"}
+        excluded_forms = {
+            "cereal",
+            "cider",
+            "dried",
+            "juice",
+            "pie",
+            "sauce",
+        }
 
         if excluded_forms & tokens:
             return None
@@ -206,14 +271,37 @@ def _classify_produce(normalized_name, tokens):
         )
 
     if {"banana", "bananas"} & tokens:
-        excluded_forms = {"bread", "chips", "dried"}
+        excluded_forms = {
+            "blend",
+            "bread",
+            "cereal",
+            "chips",
+            "chocolate",
+            "covered",
+            "dried",
+            "flavour",
+            "flavored",
+            "flavoured",
+            "frozen",
+            "iqf",
+            "puff",
+            "puffs",
+            "puree",
+            "slice",
+            "sliced",
+            "smoothie",
+            "steamed",
+        }
 
         if excluded_forms & tokens:
             return None
 
         product_form = "bagged" if {"bag", "bagged"} & tokens else "loose"
+        comparison_group = (
+            "cooking_bananas" if "cooking" in tokens else "fresh_bananas"
+        )
         return _classification(
-            "produce", "bananas", "fresh_bananas", product_form, attributes
+            "produce", "bananas", comparison_group, product_form, attributes
         )
 
     if {"plantain", "plantains"} & tokens:
@@ -254,7 +342,9 @@ def _classify_cheese(normalized_name, tokens):
     else:
         comparison_group = "cheese_unspecified_type"
 
-    if {"shred", "shreds", "shredded", "grated"} & tokens:
+    if "ball" in tokens and "mozzarella" in tokens:
+        product_form = "ball"
+    elif {"shred", "shreds", "shredded", "grated"} & tokens:
         product_form = "shredded"
     elif {"slice", "slices", "sliced"} & tokens:
         product_form = "sliced"
@@ -295,3 +385,8 @@ def classify_product(product_name):
             return result
 
     return _unknown_classification()
+
+
+def expected_standardized_unit(comparison_group):
+    """Return the comparison unit required for a supported product group."""
+    return EXPECTED_STANDARDIZED_UNITS.get(comparison_group)

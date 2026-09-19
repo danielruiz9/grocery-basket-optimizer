@@ -13,25 +13,20 @@ from datetime import date
 from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit, urlunsplit
 
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-from src.classification import classify_product
-from src.pricing import calculate_price_per_standard_unit
+from src.collectors.common import (
+    DEFAULT_SEARCH_TERMS,
+    OUTPUT_COLUMNS,
+    normalize_listing,
+    normalize_listings,
+    save_listings as _save_listings,
+)
 
 
 WALMART_BASE_URL = "https://www.walmart.ca"
 WALMART_SEARCH_URL = f"{WALMART_BASE_URL}/en/search"
-DEFAULT_SEARCH_TERMS = (
-    "chicken breast",
-    "eggs",
-    "apples",
-    "bananas",
-    "pasta",
-    "bread",
-    "cheese",
-)
 DEFAULT_OUTPUT_PATH = (
     Path(__file__).resolve().parents[2]
     / "data"
@@ -41,33 +36,6 @@ DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; GroceryBasketOptimizer/0.1)",
     "Accept-Language": "en-CA,en;q=0.9",
 }
-
-OUTPUT_COLUMNS = (
-    "date_observed",
-    "search_term",
-    "store",
-    "product_title",
-    "product_url",
-    "package_size_text",
-    "package_size",
-    "package_unit",
-    "displayed_price",
-    "unit_price_text",
-    "listed_unit_price",
-    "listed_unit",
-    "is_variable_weight",
-    "sale_status",
-    "sale_price",
-    "regular_price",
-    "category",
-    "product_family",
-    "comparison_group",
-    "product_form",
-    "attributes",
-    "standardized_unit",
-    "price_per_standard_unit",
-    "normalization_error",
-)
 
 _NUMBER_PATTERN = r"[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?"
 _RANGE_PATTERN = re.compile(
@@ -403,68 +371,6 @@ def parse_search_results(html, search_term, observed_date=None):
     return listings
 
 
-def _standardized_unit(listing):
-    if listing.get("is_variable_weight"):
-        unit = listing.get("listed_unit") or listing.get("package_unit")
-    else:
-        unit = listing.get("package_unit") or listing.get("listed_unit")
-
-    if not unit:
-        return None
-
-    normalized = str(unit).lower().replace(" ", "")
-
-    if normalized in {"g", "kg", "100g", "lb", "lbs"}:
-        return "100g"
-
-    if normalized in {"ml", "100ml", "l", "1l"}:
-        return "1L"
-
-    if normalized in {"count", "1unit", "ea", "each"}:
-        return "1unit"
-
-    return None
-
-
-def normalize_listing(listing):
-    """Add classification and standardized pricing to one raw listing."""
-    normalized = dict(listing)
-    classification = classify_product(listing.get("product_title"))
-    normalized.update(classification)
-    normalized["standardized_unit"] = _standardized_unit(listing)
-    normalized["price_per_standard_unit"] = None
-    normalized["normalization_error"] = None
-
-    if normalized["standardized_unit"] is None:
-        normalized["normalization_error"] = (
-            "No supported package or listed unit was available."
-        )
-        return normalized
-
-    try:
-        normalized["price_per_standard_unit"] = (
-            calculate_price_per_standard_unit(
-                price=listing.get("displayed_price"),
-                package_size=listing.get("package_size"),
-                package_unit=listing.get("package_unit"),
-                standardized_unit=normalized["standardized_unit"],
-                is_variable_weight=listing.get(
-                    "is_variable_weight", False
-                ),
-                listed_unit_price=listing.get("listed_unit_price"),
-                listed_unit=listing.get("listed_unit"),
-            )
-        )
-    except (TypeError, ValueError) as exc:
-        normalized["normalization_error"] = str(exc)
-
-    return normalized
-
-
-def normalize_listings(listings):
-    return [normalize_listing(listing) for listing in listings]
-
-
 def collect_walmart_listings(
     search_terms=DEFAULT_SEARCH_TERMS,
     max_results_per_term=12,
@@ -513,19 +419,7 @@ def collect_walmart_listings(
 
 
 def save_listings(listings, output_path=DEFAULT_OUTPUT_PATH):
-    """Write normalized listings to CSV with a stable column order."""
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    rows = []
-    for listing in listings:
-        row = dict(listing)
-        row["attributes"] = "|".join(row.get("attributes", []))
-        rows.append(row)
-
-    prices = pd.DataFrame(rows, columns=OUTPUT_COLUMNS)
-    prices.to_csv(output_path, index=False)
-    return output_path
+    return _save_listings(listings, output_path)
 
 
 def _build_argument_parser():
