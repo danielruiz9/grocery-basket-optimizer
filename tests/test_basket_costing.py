@@ -98,6 +98,22 @@ class TestBasketCosting(unittest.TestCase):
         self.assertEqual(result["excess_quantity"], 6)
         self.assertAlmostEqual(result["estimated_item_cost"], 7.98)
 
+    def test_count_can_request_whole_fixed_packages(self):
+        result = estimate_product_cost(
+            _product(
+                package_size=675,
+                package_unit="g",
+                displayed_price=2.48,
+            ),
+            requested_quantity=1,
+            requested_unit="count",
+        )
+
+        self.assertEqual(result["package_count"], 1)
+        self.assertEqual(result["fulfilled_quantity"], 1)
+        self.assertEqual(result["excess_quantity"], 0)
+        self.assertEqual(result["estimated_item_cost"], 2.48)
+
     def test_package_overshoot_is_reported_in_requested_units(self):
         result = estimate_product_cost(
             _product(

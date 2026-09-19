@@ -279,17 +279,21 @@ def estimate_product_cost(product, requested_quantity, requested_unit):
         "package_unit",
     )
 
-    if requested_dimension != package_dimension:
+    if requested_dimension == "count" and package_dimension != "count":
+        package_count = max(1, math.ceil(requested_quantity - 1e-12))
+        fulfilled_quantity = float(package_count)
+        excess_quantity = fulfilled_quantity - requested_quantity
+    elif requested_dimension != package_dimension:
         raise ValueError(
             "Requested unit is incompatible with the product's package unit."
         )
-
-    package_base_quantity = package_size * package_factor
-    package_ratio = requested_base_quantity / package_base_quantity
-    package_count = max(1, math.ceil(package_ratio - 1e-12))
-    fulfilled_base_quantity = package_count * package_base_quantity
-    fulfilled_quantity = fulfilled_base_quantity / requested_factor
-    excess_quantity = fulfilled_quantity - requested_quantity
+    else:
+        package_base_quantity = package_size * package_factor
+        package_ratio = requested_base_quantity / package_base_quantity
+        package_count = max(1, math.ceil(package_ratio - 1e-12))
+        fulfilled_base_quantity = package_count * package_base_quantity
+        fulfilled_quantity = fulfilled_base_quantity / requested_factor
+        excess_quantity = fulfilled_quantity - requested_quantity
     effective_package_price, multi_buy_applied = (
         _effective_fixed_package_price(product, package_count)
     )

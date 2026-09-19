@@ -1,10 +1,13 @@
-"""Optimize comparison-group selections using normalized real-price data."""
+"""Optimize quantity-aware grocery baskets using normalized real-price data."""
 
+from collections.abc import Mapping
 from itertools import combinations
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from src.basket_costing import cost_candidate_products
 
 
 DEFAULT_REAL_PRICE_PATH = (
@@ -12,19 +15,11 @@ DEFAULT_REAL_PRICE_PATH = (
     / "data"
     / "optimizer_ready_prices.csv"
 )
-SHOPPING_PLAN_COLUMNS = (
+REQUIRED_PRICE_COLUMNS = {
     "comparison_group",
     "store",
-    "product_title",
-    "product_url",
-    "package_size_text",
-    "displayed_price",
     "standardized_unit",
     "price_per_standard_unit",
-    "sale_status",
-    "attributes",
-)
-REQUIRED_PRICE_COLUMNS = set(SHOPPING_PLAN_COLUMNS) | {
     "normalization_error",
 }
 
@@ -39,45 +34,107 @@ def load_real_prices(prices_path=DEFAULT_REAL_PRICE_PATH):
     return pd.read_csv(path)
 
 
-def _validate_requested_groups(requested_groups):
-    if isinstance(requested_groups, str):
-        raise ValueError("requested_groups must be a list of group names.")
+def _validate_basket(basket):
+    if isinstance(basket, (str, bytes, Mapping)):
+        raise ValueError("basket must be a list of requested item mappings.")
 
     try:
-        groups = tuple(str(group).strip() for group in requested_groups)
+        requested_items = list(basket)
     except TypeError as exc:
         raise ValueError(
-            "requested_groups must be a list of group names."
+            "basket must be a list of requested item mappings."
         ) from exc
 
-    if not groups or any(not group for group in groups):
-        raise ValueError(
-            "At least one non-empty comparison group is required."
+    if not requested_items:
+        raise ValueError("The grocery basket cannot be empty.")
+
+    validated = []
+    seen_groups = set()
+
+    for index, item in enumerate(requested_items, start=1):
+        if not isinstance(item, Mapping):
+            raise ValueError(
+                f"Basket item {index} must be a mapping with "
+                "comparison_group, quantity, and unit."
+            )
+
+        comparison_group = str(item.get("comparison_group") or "").strip()
+        unit = str(item.get("unit") or "").strip()
+        quantity = item.get("quantity")
+
+        if not comparison_group:
+            raise ValueError(
+                f"Basket item {index} requires a comparison_group."
+            )
+
+        if comparison_group in seen_groups:
+            raise ValueError(
+                "The basket cannot contain duplicate comparison groups."
+            )
+
+        if not unit:
+            raise ValueError(f"Basket item {index} requires a unit.")
+
+        if isinstance(quantity, bool):
+            raise ValueError(
+                f"Basket item {index} quantity must be numeric and finite."
+            )
+
+        try:
+            quantity = float(quantity)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Basket item {index} quantity must be numeric and finite."
+            ) from exc
+
+        if not np.isfinite(quantity):
+            raise ValueError(
+                f"Basket item {index} quantity must be numeric and finite."
+            )
+
+        if quantity <= 0:
+            raise ValueError(
+                f"Basket item {index} quantity must be greater than zero."
+            )
+
+        seen_groups.add(comparison_group)
+        validated.append(
+            {
+                "comparison_group": comparison_group,
+                "quantity": quantity,
+                "unit": unit,
+            }
         )
 
-    if len(groups) != len(set(groups)):
-        raise ValueError("requested_groups cannot contain duplicates.")
-
-    return groups
+    return tuple(validated)
 
 
 def _validate_settings(max_stores, savings_threshold):
-    if max_stores not in {1, 2}:
+    if isinstance(max_stores, bool) or max_stores not in {1, 2}:
         raise ValueError("max_stores must currently be either 1 or 2.")
 
-    if (
-        isinstance(savings_threshold, bool)
-        or not isinstance(savings_threshold, (int, float))
-        or not np.isfinite(savings_threshold)
-        or savings_threshold < 0
-    ):
+    if isinstance(savings_threshold, bool):
         raise ValueError(
             "savings_threshold must be a finite non-negative number."
         )
 
+    try:
+        savings_threshold = float(savings_threshold)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "savings_threshold must be a finite non-negative number."
+        ) from exc
+
+    if not np.isfinite(savings_threshold) or savings_threshold < 0:
+        raise ValueError(
+            "savings_threshold must be a finite non-negative number."
+        )
+
+    return savings_threshold
+
 
 def prepare_real_price_data(prices):
-    """Validate and retain only rows eligible for normalized comparison."""
+    """Validate and retain rows eligible for quantity-aware costing."""
     missing_columns = REQUIRED_PRICE_COLUMNS - set(prices.columns)
 
     if missing_columns:
@@ -133,52 +190,112 @@ def _python_value(value):
     return value
 
 
-def _shopping_plan_item(row):
-    return {
-        column: _python_value(row[column])
-        for column in SHOPPING_PLAN_COLUMNS
-    }
-
-
-def _select_product(candidates):
-    ordered = candidates.sort_values(
-        [
-            "price_per_standard_unit",
-            "store",
-            "product_title",
-            "product_url",
-        ],
-        kind="mergesort",
-        na_position="last",
+def _shopping_plan_item(product):
+    effective_package_price = product.get("effective_package_price")
+    listed_unit_price = product.get("listed_unit_price")
+    is_variable_weight = product.get("costing_method") == "variable_weight"
+    effective_price = (
+        listed_unit_price if is_variable_weight else effective_package_price
     )
-    return ordered.iloc[0]
+    effective_price_unit = (
+        product.get("listed_unit") if is_variable_weight else "package"
+    )
+    columns = (
+        "comparison_group",
+        "requested_quantity",
+        "requested_unit",
+        "store",
+        "product_title",
+        "product_url",
+        "package_size_text",
+        "package_size",
+        "package_unit",
+        "package_count",
+        "fulfilled_quantity",
+        "fulfilled_unit",
+        "excess_quantity",
+        "excess_unit",
+        "effective_package_price",
+        "listed_unit_price",
+        "listed_unit",
+        "estimated_item_cost",
+        "displayed_price",
+        "sale_status",
+        "multi_buy_quantity",
+        "multi_buy_unit_price",
+        "single_item_price",
+        "multi_buy_applied",
+        "is_variable_weight",
+        "costing_method",
+        "standardized_unit",
+        "price_per_standard_unit",
+        "attributes",
+        "data_quality_warning",
+    )
+    shopping_plan_item = {
+        column: _python_value(product.get(column))
+        for column in columns
+    }
+    shopping_plan_item["effective_price"] = _python_value(effective_price)
+    shopping_plan_item["effective_price_unit"] = _python_value(
+        effective_price_unit
+    )
+    return shopping_plan_item
 
 
-def _evaluate_store_option(prices, stores, requested_groups):
-    option_prices = prices.loc[prices["store"].isin(stores)]
+def _product_tie_key(product):
+    return (
+        product["estimated_item_cost"],
+        str(product.get("store") or ""),
+        str(product.get("product_title") or ""),
+        str(product.get("product_url") or ""),
+    )
+
+
+def _build_store_item_options(prices, stores, basket):
+    store_item_options = {}
+
+    for store in stores:
+        store_item_options[store] = {}
+
+        for requested_item in basket:
+            candidates = cost_candidate_products(
+                store=store,
+                comparison_group=requested_item["comparison_group"],
+                requested_quantity=requested_item["quantity"],
+                requested_unit=requested_item["unit"],
+                prices=prices,
+            )
+            store_item_options[store][
+                requested_item["comparison_group"]
+            ] = candidates[0] if candidates else None
+
+    return store_item_options
+
+
+def _evaluate_store_option(stores, basket, store_item_options):
     shopping_plan = []
     missing_groups = []
 
-    for comparison_group in requested_groups:
-        candidates = option_prices.loc[
-            option_prices["comparison_group"].eq(comparison_group)
+    for requested_item in basket:
+        comparison_group = requested_item["comparison_group"]
+        available_products = [
+            store_item_options[store][comparison_group]
+            for store in stores
+            if store_item_options[store][comparison_group] is not None
         ]
 
-        if candidates.empty:
+        if not available_products:
             missing_groups.append(comparison_group)
             continue
 
-        shopping_plan.append(_shopping_plan_item(_select_product(candidates)))
+        selected_product = min(available_products, key=_product_tie_key)
+        shopping_plan.append(_shopping_plan_item(selected_product))
 
     complete = not missing_groups
     used_stores = tuple(sorted({item["store"] for item in shopping_plan}))
-    total_normalized_price = (
-        float(
-            sum(
-                item["price_per_standard_unit"]
-                for item in shopping_plan
-            )
-        )
+    total_cost = (
+        float(sum(item["estimated_item_cost"] for item in shopping_plan))
         if complete
         else None
     )
@@ -190,7 +307,7 @@ def _evaluate_store_option(prices, stores, requested_groups):
             item["comparison_group"] for item in shopping_plan
         ],
         "missing_groups": missing_groups,
-        "total_normalized_price": total_normalized_price,
+        "total_cost": total_cost,
         "shopping_plan": shopping_plan,
         "uses_all_selected_stores": used_stores == tuple(stores),
     }
@@ -203,22 +320,22 @@ def _best_option(options):
     return min(
         options,
         key=lambda option: (
-            option["total_normalized_price"],
+            option["total_cost"],
             option["stores"],
         ),
     )
 
 
 def optimize_real_price_basket(
-    requested_groups,
+    basket,
     prices=None,
     prices_path=DEFAULT_REAL_PRICE_PATH,
     max_stores=2,
     savings_threshold=0.0,
 ):
-    """Compare one- and two-store plans for normalized product groups."""
-    groups = _validate_requested_groups(requested_groups)
-    _validate_settings(max_stores, savings_threshold)
+    """Compare one- and two-store plans using estimated checkout dollars."""
+    requested_basket = _validate_basket(basket)
+    savings_threshold = _validate_settings(max_stores, savings_threshold)
     source_prices = (
         load_real_prices(prices_path)
         if prices is None
@@ -226,9 +343,17 @@ def optimize_real_price_basket(
     )
     prepared = prepare_real_price_data(source_prices)
     stores = tuple(sorted(prepared["store"].unique().tolist()))
-
+    store_item_options = _build_store_item_options(
+        prepared,
+        stores,
+        requested_basket,
+    )
     store_coverage = {
-        store: _evaluate_store_option(prepared, (store,), groups)
+        store: _evaluate_store_option(
+            (store,),
+            requested_basket,
+            store_item_options,
+        )
         for store in stores
     }
     complete_single_options = [
@@ -237,28 +362,40 @@ def optimize_real_price_basket(
         if option["complete"]
     ]
     best_single = _best_option(complete_single_options)
+    result_base = {
+        "requested_basket": [dict(item) for item in requested_basket],
+        "requested_groups": tuple(
+            item["comparison_group"] for item in requested_basket
+        ),
+        "store_coverage": store_coverage,
+        "savings_threshold": savings_threshold,
+    }
 
     if max_stores == 1:
         if best_single is None:
             raise ValueError(
-                "No single store covers every requested comparison group."
+                "No single store can fulfill every requested basket item."
             )
 
         return {
-            "requested_groups": groups,
-            "store_coverage": store_coverage,
+            **result_base,
             "best_single": best_single,
             "best_pair": None,
             "savings": 0.0,
             "worth_it": False,
             "recommended_option": best_single,
             "recommendation": (
-                f"Use {best_single['stores'][0]} for all requested groups."
+                f"Use {best_single['stores'][0]} for an estimated "
+                f"${best_single['total_cost']:.2f}."
             ),
         }
 
     pair_options = [
-        _evaluate_store_option(prepared, store_pair, groups)
+        _evaluate_store_option(
+            store_pair,
+            requested_basket,
+            store_item_options,
+        )
         for store_pair in combinations(stores, 2)
     ]
     complete_pair_options = [
@@ -270,14 +407,13 @@ def optimize_real_price_basket(
 
     if best_single is None and best_pair is None:
         raise ValueError(
-            "No one-store or two-store combination covers every requested "
-            "comparison group."
+            "No one-store or two-store combination can fulfill every "
+            "requested basket item."
         )
 
     if best_pair is None:
         return {
-            "requested_groups": groups,
-            "store_coverage": store_coverage,
+            **result_base,
             "best_single": best_single,
             "best_pair": None,
             "savings": 0.0,
@@ -285,42 +421,37 @@ def optimize_real_price_basket(
             "recommended_option": best_single,
             "recommendation": (
                 f"Use {best_single['stores'][0]}; no genuine two-store "
-                "option improves group coverage or price."
+                "plan can fulfill the basket more cheaply."
             ),
         }
 
     if best_single is None:
         return {
-            "requested_groups": groups,
-            "store_coverage": store_coverage,
+            **result_base,
             "best_single": None,
             "best_pair": best_pair,
             "savings": None,
             "worth_it": True,
             "recommended_option": best_pair,
             "recommendation": (
-                "Use two stores because no single store covers every "
-                "requested comparison group."
+                "Use two stores because no single store can fulfill every "
+                "requested basket item."
             ),
         }
 
-    savings = (
-        best_single["total_normalized_price"]
-        - best_pair["total_normalized_price"]
-    )
+    savings = best_single["total_cost"] - best_pair["total_cost"]
     worth_it = savings > 0 and savings >= savings_threshold
     recommended_option = best_pair if worth_it else best_single
     recommendation = (
-        "Use two stores because the normalized savings meet or exceed "
-        "the threshold."
+        "Use two stores because the estimated dollar savings meet or "
+        "exceed the threshold."
         if worth_it
-        else "Use one store because the normalized savings do not meet "
-        "the threshold."
+        else "Use one store because the estimated dollar savings do not "
+        "meet the threshold."
     )
 
     return {
-        "requested_groups": groups,
-        "store_coverage": store_coverage,
+        **result_base,
         "best_single": best_single,
         "best_pair": best_pair,
         "savings": float(savings),
