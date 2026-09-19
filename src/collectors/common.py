@@ -1,10 +1,11 @@
 """Shared classification, price normalization, and CSV output helpers."""
 
+import math
 from pathlib import Path
 
 import pandas as pd
 
-from src.classification import classify_product
+from src.classification import classify_product, expected_standardized_unit
 from src.pricing import calculate_price_per_standard_unit
 
 
@@ -44,6 +45,12 @@ OUTPUT_COLUMNS = (
     "price_per_standard_unit",
     "normalization_error",
 )
+QUALITY_OUTPUT_COLUMNS = (
+    *OUTPUT_COLUMNS[:-1],
+    "data_quality_warning",
+    OUTPUT_COLUMNS[-1],
+)
+IMPLAUSIBLE_UNIT_PRICE_FACTOR = 5.0
 
 
 def _standardized_unit(listing):
@@ -106,6 +113,97 @@ def normalize_listing(listing):
 
 def normalize_listings(listings):
     return [normalize_listing(listing) for listing in listings]
+
+
+def _listed_price_warning(listing, normalized):
+    if listing.get("is_variable_weight"):
+        return None
+
+    required_values = (
+        listing.get("displayed_price"),
+        listing.get("package_size"),
+        listing.get("package_unit"),
+        listing.get("listed_unit_price"),
+        listing.get("listed_unit"),
+        normalized.get("standardized_unit"),
+    )
+
+    if any(value is None or value == "" for value in required_values):
+        return None
+
+    try:
+        package_price = calculate_price_per_standard_unit(
+            price=listing["displayed_price"],
+            package_size=listing["package_size"],
+            package_unit=listing["package_unit"],
+            standardized_unit=normalized["standardized_unit"],
+        )
+        listed_price = calculate_price_per_standard_unit(
+            price=None,
+            package_size=None,
+            package_unit=None,
+            standardized_unit=normalized["standardized_unit"],
+            is_variable_weight=True,
+            listed_unit_price=listing["listed_unit_price"],
+            listed_unit=listing["listed_unit"],
+        )
+    except (TypeError, ValueError):
+        return None
+
+    if not math.isfinite(package_price) or not math.isfinite(listed_price):
+        return None
+
+    smaller_price = min(package_price, listed_price)
+    larger_price = max(package_price, listed_price)
+
+    if smaller_price == 0:
+        factor = math.inf if larger_price > 0 else 1.0
+    else:
+        factor = larger_price / smaller_price
+
+    if factor < IMPLAUSIBLE_UNIT_PRICE_FACTOR:
+        return None
+
+    factor_text = "infinite" if math.isinf(factor) else f"{factor:.2f}x"
+    return (
+        "Listed unit price differs from the package-derived price by "
+        f"{factor_text}; package-derived normalization was retained."
+    )
+
+
+def normalize_listing_with_quality_checks(listing):
+    """Normalize one row and enforce comparison-data quality rules."""
+    normalized = normalize_listing(listing)
+    normalized["data_quality_warning"] = _listed_price_warning(
+        listing,
+        normalized,
+    )
+
+    expected_unit = expected_standardized_unit(
+        normalized["comparison_group"]
+    )
+    actual_unit = normalized.get("standardized_unit")
+
+    if (
+        normalized["normalization_error"] is None
+        and expected_unit is not None
+        and actual_unit != expected_unit
+    ):
+        normalized["price_per_standard_unit"] = None
+        normalized["normalization_error"] = (
+            f"Incompatible comparison unit for "
+            f"{normalized['comparison_group']}: expected {expected_unit}, "
+            f"found {actual_unit}."
+        )
+
+    return normalized
+
+
+def normalize_listings_with_quality_checks(listings):
+    return [
+        normalize_listing_with_quality_checks(listing)
+        for listing in listings
+    ]
 
 
 def save_listings(listings, output_path, output_columns=OUTPUT_COLUMNS):

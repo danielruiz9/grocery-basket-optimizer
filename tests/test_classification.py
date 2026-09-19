@@ -61,9 +61,24 @@ class TestProductClassification(unittest.TestCase):
         )
         self.assertEqual(diced["product_form"], "diced")
         self.assertEqual(
+            diced["comparison_group"],
+            "chicken_breast_diced",
+        )
+        self.assertEqual(
             diced["attributes"],
             ["raised_without_antibiotics"],
         )
+
+    def test_classifies_chicken_breast_fillets_as_fillets(self):
+        result = classify_product(
+            "Boneless Skinless Chicken Breast Fillets, Prime"
+        )
+
+        self.assertEqual(
+            result["comparison_group"],
+            "chicken_breast_boneless",
+        )
+        self.assertEqual(result["product_form"], "fillet")
 
     def test_classifies_large_free_run_eggs(self):
         result = classify_product("Large Free-Run Brown Eggs, 12 Count")
@@ -146,6 +161,13 @@ class TestProductClassification(unittest.TestCase):
                     result["comparison_group"],
                     "unsupported",
                 )
+
+    def test_does_not_classify_baby_banana_cereals_as_fresh(self):
+        result = classify_product(
+            "Baby Cereals, Rice & Banana, Stage 2"
+        )
+
+        self.assertEqual(result["comparison_group"], "unsupported")
 
     def test_classifies_cooking_bananas_separately_from_fresh_bananas(self):
         cooking = classify_product("Green Cooking Bananas")
@@ -245,6 +267,14 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(result["comparison_group"], "mozzarella_cheese")
         self.assertEqual(result["product_form"], "ball")
 
+    def test_separates_processed_cheese_from_natural_cheddar(self):
+        result = classify_product(
+            "Cheddar-Style Processed Cheese Slices"
+        )
+
+        self.assertEqual(result["comparison_group"], "processed_cheese")
+        self.assertEqual(result["product_form"], "sliced")
+
     def test_returns_explicit_unknown_for_unsupported_product(self):
         result = classify_product("Frozen Pepperoni Pizza")
 
@@ -258,6 +288,25 @@ class TestProductClassification(unittest.TestCase):
                 "attributes": [],
             },
         )
+
+    def test_rejects_representative_food_basics_search_noise(self):
+        noisy_titles = (
+            "Fully Coocked Chicken Breast Slices",
+            "Chicken Breast Souvlaki, Value Pack",
+            "Hard Boiled Peeled Eggs, Eggs2go!",
+            "Quail Eggs",
+            "2% Banana Greek Yogurt",
+            "Chocolate Chip Banana Muffins, Value Pack",
+            "Banana Leaf",
+            "Frozen Garlic Bread",
+        )
+
+        for title in noisy_titles:
+            with self.subTest(title=title):
+                self.assertEqual(
+                    classify_product(title)["comparison_group"],
+                    "unsupported",
+                )
 
 
 if __name__ == "__main__":

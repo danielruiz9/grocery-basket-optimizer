@@ -44,6 +44,7 @@ EXPECTED_STANDARDIZED_UNITS = {
     "chicken_breast": "100g",
     "chicken_breast_bone_in": "100g",
     "chicken_breast_boneless": "100g",
+    "chicken_breast_diced": "100g",
     "breaded_chicken_breast": "100g",
     "chicken_breast_strips": "100g",
     "bagels": "100g",
@@ -70,6 +71,7 @@ EXPECTED_STANDARDIZED_UNITS = {
     "mozzarella_cheese": "100g",
     "swiss_cheese": "100g",
     "marble_cheese": "100g",
+    "processed_cheese": "100g",
     "cheese_unspecified_type": "100g",
 }
 
@@ -122,6 +124,9 @@ def _classify_chicken_breast(normalized_name, tokens):
     if "chicken" not in tokens or not {"breast", "breasts"} & tokens:
         return None
 
+    if {"cooked", "coocked", "souvlaki"} & tokens:
+        return _unknown_classification()
+
     attributes = _extract_attributes(normalized_name)
 
     if "breaded" in tokens:
@@ -130,6 +135,9 @@ def _classify_chicken_breast(normalized_name, tokens):
     elif {"strip", "strips", "tender", "tenders"} & tokens:
         comparison_group = "chicken_breast_strips"
         product_form = "strips"
+    elif "diced" in tokens:
+        comparison_group = "chicken_breast_diced"
+        product_form = "diced"
     else:
         if "bone in" in normalized_name:
             comparison_group = "chicken_breast_bone_in"
@@ -139,8 +147,8 @@ def _classify_chicken_breast(normalized_name, tokens):
         else:
             comparison_group = "chicken_breast"
 
-        if "diced" in tokens:
-            product_form = "diced"
+        if {"fillet", "fillets"} & tokens:
+            product_form = "fillet"
         elif {"slice", "slices", "sliced"} & tokens:
             product_form = "sliced"
         else:
@@ -156,6 +164,18 @@ def _classify_chicken_breast(normalized_name, tokens):
 
 
 def _classify_bread(normalized_name, tokens):
+    if {
+        "cake",
+        "cakes",
+        "cookie",
+        "cookies",
+        "frozen",
+        "garlic",
+        "muffin",
+        "muffins",
+    } & tokens:
+        return None
+
     attributes = _extract_attributes(normalized_name)
 
     if {"bagel", "bagels"} & tokens:
@@ -220,6 +240,9 @@ def _classify_eggs(normalized_name, tokens):
     if not {"egg", "eggs"} & tokens:
         return None
 
+    if {"boiled", "peeled", "quail"} & tokens:
+        return _unknown_classification()
+
     attributes = _extract_attributes(normalized_name)
 
     if "liquid" in tokens or "egg whites" in normalized_name:
@@ -256,6 +279,8 @@ def _classify_produce(normalized_name, tokens):
         excluded_forms = {
             "cereal",
             "cider",
+            "cookie",
+            "cookies",
             "dried",
             "juice",
             "pie",
@@ -274,9 +299,14 @@ def _classify_produce(normalized_name, tokens):
         excluded_forms = {
             "blend",
             "bread",
+            "cake",
+            "cakes",
             "cereal",
+            "cereals",
             "chips",
             "chocolate",
+            "cookie",
+            "cookies",
             "covered",
             "dried",
             "flavour",
@@ -284,6 +314,9 @@ def _classify_produce(normalized_name, tokens):
             "flavoured",
             "frozen",
             "iqf",
+            "leaf",
+            "muffin",
+            "muffins",
             "puff",
             "puffs",
             "puree",
@@ -291,6 +324,7 @@ def _classify_produce(normalized_name, tokens):
             "sliced",
             "smoothie",
             "steamed",
+            "yogurt",
         }
 
         if excluded_forms & tokens:
@@ -327,7 +361,9 @@ def _classify_cheese(normalized_name, tokens):
 
     attributes = _extract_attributes(normalized_name)
 
-    if "cream cheese" in normalized_name:
+    if "processed" in tokens:
+        comparison_group = "processed_cheese"
+    elif "cream cheese" in normalized_name:
         comparison_group = "cream_cheese"
     elif "cottage cheese" in normalized_name:
         comparison_group = "cottage_cheese"
