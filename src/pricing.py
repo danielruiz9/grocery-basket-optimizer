@@ -76,6 +76,32 @@ def calculate_price_per_standard_unit(
             standardized_unit
         )
 
+    has_package_data = (
+        not pd.isna(price)
+        and not pd.isna(package_size)
+        and not pd.isna(package_unit)
+        and bool(str(package_unit).strip())
+    )
+
+    if not has_package_data:
+        has_listed_unit_price = (
+            not pd.isna(listed_unit_price)
+            and not pd.isna(listed_unit)
+            and bool(str(listed_unit).strip())
+        )
+
+        if has_listed_unit_price:
+            return _calculate_from_listed_unit_price(
+                listed_unit_price,
+                listed_unit,
+                standardized_unit
+            )
+
+        raise ValueError(
+            "Fixed-package products require price, package size, and "
+            "package unit, or a listed unit price and unit."
+        )
+
     if package_size <= 0:
         raise ValueError("Package size must be greater than zero.")
 
@@ -90,6 +116,10 @@ def calculate_price_per_standard_unit(
 
     if package_unit == "kg" and standardized_unit == "100g":
         package_size_in_g = package_size * 1000
+        return price / package_size_in_g * 100
+
+    if package_unit in {"lb", "lbs"} and standardized_unit == "100g":
+        package_size_in_g = package_size * 453.59237
         return price / package_size_in_g * 100
 
     if package_unit == "ml" and standardized_unit == "1l":

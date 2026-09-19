@@ -41,6 +41,30 @@ class TestProductClassification(unittest.TestCase):
             "breaded_chicken_breast",
         )
 
+    def test_classifies_sliced_and_diced_chicken_forms(self):
+        sliced = classify_product(
+            "Prime Sliced Boneless Skinless Chicken Breasts "
+            "Raised Without Antibiotics"
+        )
+        diced = classify_product(
+            "Prime Raised Without Antibiotics Diced Chicken Breast"
+        )
+
+        self.assertEqual(sliced["product_form"], "sliced")
+        self.assertEqual(
+            sliced["comparison_group"],
+            "chicken_breast_boneless",
+        )
+        self.assertEqual(
+            sliced["attributes"],
+            ["boneless", "skinless", "raised_without_antibiotics"],
+        )
+        self.assertEqual(diced["product_form"], "diced")
+        self.assertEqual(
+            diced["attributes"],
+            ["raised_without_antibiotics"],
+        )
+
     def test_classifies_large_free_run_eggs(self):
         result = classify_product("Large Free-Run Brown Eggs, 12 Count")
 
@@ -49,6 +73,27 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(result["comparison_group"], "large_eggs")
         self.assertEqual(result["product_form"], "shell")
         self.assertEqual(result["attributes"], ["free_run"])
+
+    def test_classifies_xl_and_extra_large_eggs(self):
+        xl = classify_product("Great Value XL White 12 Eggs")
+        extra_large = classify_product("Extra-Large Brown Eggs, 12 Count")
+
+        self.assertEqual(xl["comparison_group"], "extra_large_eggs")
+        self.assertEqual(
+            extra_large["comparison_group"],
+            "extra_large_eggs",
+        )
+
+    def test_extracts_omega_3_attribute(self):
+        omega3 = classify_product(
+            "Conestoga Farms Free Run Omega3 Large 18 Eggs"
+        )
+        omega_hyphen = classify_product(
+            "Great Value Omega-3 Large White 12 Eggs"
+        )
+
+        self.assertEqual(omega3["attributes"], ["free_run", "omega_3"])
+        self.assertEqual(omega_hyphen["attributes"], ["omega_3"])
 
     def test_distinguishes_liquid_egg_whites(self):
         result = classify_product("Liquid Egg Whites 500 mL")
@@ -76,6 +121,16 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(bananas["comparison_group"], "fresh_bananas")
         self.assertEqual(bananas["product_form"], "loose")
         self.assertEqual(banana_bread["comparison_group"], "sliced_bread")
+
+    def test_classifies_plantains_as_distinct_produce(self):
+        result = classify_product(
+            "Plantain, Sold in Singles, 0.25 - 0.35 KG"
+        )
+
+        self.assertEqual(result["category"], "produce")
+        self.assertEqual(result["product_family"], "plantains")
+        self.assertEqual(result["comparison_group"], "fresh_plantains")
+        self.assertEqual(result["product_form"], "loose")
 
     def test_preserves_dry_pasta_shapes_as_broad_substitutes(self):
         spaghetti = classify_product("Gluten-Free Spaghetti")
@@ -114,6 +169,14 @@ class TestProductClassification(unittest.TestCase):
         self.assertEqual(block["product_form"], "block")
         self.assertEqual(shredded["product_form"], "shredded")
         self.assertEqual(shredded["attributes"], ["dairy_free"])
+
+    def test_classifies_cheese_bar_as_block(self):
+        result = classify_product(
+            "Black Diamond Marble Cheddar Cheese Bar, 400g"
+        )
+
+        self.assertEqual(result["comparison_group"], "cheddar_cheese")
+        self.assertEqual(result["product_form"], "block")
 
     def test_returns_explicit_unknown_for_unsupported_product(self):
         result = classify_product("Frozen Pepperoni Pizza")

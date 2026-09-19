@@ -30,6 +30,19 @@ class TestPricing(unittest.TestCase):
 
         self.assertAlmostEqual(result, 0.50)
 
+    def test_pounds_to_100g(self):
+        result = calculate_price_per_standard_unit(
+            price=6.44,
+            package_size=2,
+            package_unit="lb",
+            standardized_unit="100g",
+        )
+
+        self.assertAlmostEqual(
+            result,
+            6.44 / (2 * 453.59237) * 100,
+        )
+
     def test_millilitres_to_1l(self):
         result = calculate_price_per_standard_unit(
             price=4.00,
@@ -73,6 +86,19 @@ class TestPricing(unittest.TestCase):
 
         self.assertAlmostEqual(result, 14.00 / 900 * 100)
 
+    def test_fixed_package_falls_back_to_listed_unit_price(self):
+        result = calculate_price_per_standard_unit(
+            price=2.68,
+            package_size=None,
+            package_unit=None,
+            standardized_unit="100g",
+            is_variable_weight=False,
+            listed_unit_price=0.40,
+            listed_unit="100g",
+        )
+
+        self.assertAlmostEqual(result, 0.40)
+
     def test_variable_weight_uses_listed_unit_price(self):
         result = calculate_price_per_standard_unit(
             price=14.00,
@@ -85,6 +111,19 @@ class TestPricing(unittest.TestCase):
         )
 
         self.assertAlmostEqual(result, 1.541)
+
+    def test_listed_pounds_convert_to_100g(self):
+        result = calculate_price_per_standard_unit(
+            price=None,
+            package_size=None,
+            package_unit=None,
+            standardized_unit="100g",
+            is_variable_weight=True,
+            listed_unit_price=2.99,
+            listed_unit="lb",
+        )
+
+        self.assertAlmostEqual(result, 2.99 / 453.59237 * 100)
 
     def test_variable_weight_requires_listed_unit_price(self):
         with self.assertRaisesRegex(

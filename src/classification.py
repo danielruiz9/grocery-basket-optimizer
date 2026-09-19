@@ -12,6 +12,11 @@ ATTRIBUTE_PATTERNS = (
     ("whole_wheat", ("whole wheat", "whole grain")),
     ("boneless", ("boneless",)),
     ("skinless", ("skinless",)),
+    (
+        "raised_without_antibiotics",
+        ("raised without antibiotics",),
+    ),
+    ("omega_3", ("omega 3", "omega3")),
 )
 
 
@@ -86,16 +91,21 @@ def _classify_chicken_breast(normalized_name, tokens):
     elif {"strip", "strips", "tender", "tenders"} & tokens:
         comparison_group = "chicken_breast_strips"
         product_form = "strips"
-    elif "bone in" in normalized_name:
-        comparison_group = "chicken_breast_bone_in"
-        product_form = "whole"
-        attributes.append("bone_in")
-    elif "boneless" in tokens:
-        comparison_group = "chicken_breast_boneless"
-        product_form = "whole"
     else:
-        comparison_group = "chicken_breast"
-        product_form = "whole"
+        if "bone in" in normalized_name:
+            comparison_group = "chicken_breast_bone_in"
+            attributes.append("bone_in")
+        elif "boneless" in tokens:
+            comparison_group = "chicken_breast_boneless"
+        else:
+            comparison_group = "chicken_breast"
+
+        if "diced" in tokens:
+            product_form = "diced"
+        elif {"slice", "slices", "sliced"} & tokens:
+            product_form = "sliced"
+        else:
+            product_form = "whole"
 
     return _classification(
         "meat",
@@ -157,7 +167,7 @@ def _classify_eggs(normalized_name, tokens):
     if "liquid" in tokens or "egg whites" in normalized_name:
         comparison_group = "liquid_egg_product"
         product_form = "liquid"
-    elif "extra large" in normalized_name:
+    elif "extra large" in normalized_name or "xl" in tokens:
         comparison_group = "extra_large_eggs"
         product_form = "shell"
     elif "jumbo" in tokens:
@@ -206,6 +216,16 @@ def _classify_produce(normalized_name, tokens):
             "produce", "bananas", "fresh_bananas", product_form, attributes
         )
 
+    if {"plantain", "plantains"} & tokens:
+        product_form = "bagged" if {"bag", "bagged"} & tokens else "loose"
+        return _classification(
+            "produce",
+            "plantains",
+            "fresh_plantains",
+            product_form,
+            attributes,
+        )
+
     return None
 
 
@@ -238,7 +258,7 @@ def _classify_cheese(normalized_name, tokens):
         product_form = "shredded"
     elif {"slice", "slices", "sliced"} & tokens:
         product_form = "sliced"
-    elif "block" in tokens:
+    elif {"block", "bar"} & tokens:
         product_form = "block"
     elif {"spread", "tub"} & tokens:
         product_form = "spread"
