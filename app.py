@@ -3,28 +3,253 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from src.optimizer import optimize_basket
+from src.real_price_optimizer import optimize_real_price_basket
 
 
-prices_path = Path(__file__).resolve().parent / "data" / "sample_prices.csv"
-prices = pd.read_csv(prices_path)
+PRICES_PATH = (
+    Path(__file__).resolve().parent
+    / "data"
+    / "optimizer_ready_prices.csv"
+)
+
+GROUP_LABELS = {
+    "artisan_bread": "Artisan bread",
+    "cheddar_cheese": "Cheddar cheese",
+    "cheese_unspecified_type": "Other cheese",
+    "chicken_breast": "Chicken breast",
+    "chicken_breast_boneless": "Boneless chicken breast",
+    "chicken_breast_diced": "Diced chicken breast",
+    "chicken_breast_strips": "Chicken breast strips",
+    "cottage_cheese": "Cottage cheese",
+    "dry_pasta": "Dry pasta",
+    "extra_large_eggs": "Extra-large eggs",
+    "fresh_apples": "Fresh apples",
+    "fresh_bananas": "Fresh bananas",
+    "fresh_plantains": "Fresh plantains",
+    "large_eggs": "Large eggs",
+    "marble_cheese": "Marble cheese",
+    "medium_eggs": "Medium eggs",
+    "mozzarella_cheese": "Mozzarella cheese",
+    "processed_cheese": "Processed cheese",
+    "sliced_bread": "Sliced bread",
+    "swiss_cheese": "Swiss cheese",
+}
+
+DEFAULT_GROUPS = (
+    "chicken_breast_boneless",
+    "large_eggs",
+    "fresh_apples",
+    "dry_pasta",
+    "sliced_bread",
+)
+
+DEFAULT_WEIGHT_GRAMS = {
+    "chicken_breast": 1000.0,
+    "chicken_breast_boneless": 1500.0,
+    "chicken_breast_diced": 500.0,
+    "chicken_breast_strips": 500.0,
+    "fresh_apples": 1000.0,
+    "fresh_bananas": 1000.0,
+    "fresh_plantains": 1000.0,
+    "dry_pasta": 900.0,
+    "cheddar_cheese": 400.0,
+    "cheese_unspecified_type": 400.0,
+    "cottage_cheese": 500.0,
+    "marble_cheese": 400.0,
+    "mozzarella_cheese": 400.0,
+    "processed_cheese": 400.0,
+    "swiss_cheese": 400.0,
+}
+
+
+@st.cache_data
+def load_prices(path):
+    return pd.read_csv(path)
+
+
+def group_label(comparison_group):
+    return GROUP_LABELS.get(
+        comparison_group,
+        comparison_group.replace("_", " ").capitalize(),
+    )
+
+
+def request_kind(comparison_group, prices):
+    group_rows = prices.loc[
+        prices["comparison_group"].eq(comparison_group)
+    ]
+    product_families = set(
+        group_rows["product_family"].dropna().astype(str)
+    )
+    standardized_units = set(
+        group_rows["standardized_unit"].dropna().astype(str)
+    )
+
+    if "bread" in product_families:
+        return "packages"
+
+    if product_families == {"eggs"}:
+        return "count"
+
+    if standardized_units == {"100g"}:
+        return "weight"
+
+    if standardized_units == {"1L"}:
+        return "volume"
+
+    if standardized_units == {"1unit"}:
+        return "count"
+
+    return None
+
+
+def default_weight_unit(comparison_group):
+    if comparison_group == "dry_pasta" or "cheese" in comparison_group:
+        return "g"
+
+    return "kg"
+
+
+def default_weight_quantity(comparison_group, unit):
+    grams = DEFAULT_WEIGHT_GRAMS.get(comparison_group, 1000.0)
+    return grams if unit == "g" else grams / 1000.0
+
+
+def format_quantity(quantity, unit):
+    number = float(quantity)
+    displayed_number = (
+        str(int(number))
+        if number.is_integer()
+        else f"{number:g}"
+    )
+    return f"{displayed_number} {unit}"
+
+
+def format_currency(value):
+    return "Unavailable" if value is None else f"${value:.2f}"
+
+
+def package_size_display(item):
+    if item.get("package_size_text"):
+        return item["package_size_text"]
+
+    if item.get("package_size") is not None and item.get("package_unit"):
+        return format_quantity(
+            item["package_size"],
+            item["package_unit"],
+        )
+
+    if item.get("costing_method") == "variable_weight":
+        return "Variable weight"
+
+    return "—"
+
+
+def sale_status_display(item):
+    sale_status = item.get("sale_status")
+    status = (
+        str(sale_status).replace("_", " ").title()
+        if sale_status
+        else "—"
+    )
+
+    if item.get("multi_buy_applied"):
+        return f"{status} (multi-buy applied)"
+
+    return status
+
+
+def recommendation_message(result, savings_threshold, max_stores):
+    best_single = result["best_single"]
+    best_pair = result["best_pair"]
+    savings = result["savings"]
+
+    if best_single is not None and best_pair is not None:
+        single_store = best_single["stores"][0]
+        pair_stores = " and ".join(best_pair["stores"])
+
+        if result["worth_it"]:
+            return (
+                f"Split between {pair_stores} — estimated total "
+                f"${best_pair['total_cost']:.2f}, saving ${savings:.2f} "
+                f"versus the best single-store option. That meets your "
+                f"${savings_threshold:.2f} minimum-savings threshold."
+            )
+
+        if savings > 0:
+            return (
+                f"Shop at {single_store} — estimated basket total "
+                f"${best_single['total_cost']:.2f}. A split between "
+                f"{pair_stores} is cheaper by ${savings:.2f}, but that "
+                f"does not meet your ${savings_threshold:.2f} threshold "
+                "for making an extra stop."
+            )
+
+        return (
+            f"Shop at {single_store} — estimated basket total "
+            f"${best_single['total_cost']:.2f}. The available two-store "
+            "plan does not lower the estimated total."
+        )
+
+    if best_pair is not None:
+        pair_stores = " and ".join(best_pair["stores"])
+        return (
+            f"Split between {pair_stores} — estimated total "
+            f"${best_pair['total_cost']:.2f}. No single store can fulfill "
+            "the complete basket."
+        )
+
+    single_store = best_single["stores"][0]
+    message = (
+        f"Shop at {single_store} — estimated basket total "
+        f"${best_single['total_cost']:.2f}."
+    )
+
+    if max_stores == 2:
+        message += " No valid two-store split is available."
+
+    return message
+
+
+prices = load_prices(PRICES_PATH)
+
+latest_date = pd.to_datetime(
+    prices["date_observed"],
+    errors="coerce",
+).max()
+
+supported_groups = sorted(
+    (
+        group
+        for group in prices["comparison_group"].dropna().unique()
+        if request_kind(group, prices) is not None
+    ),
+    key=group_label,
+)
+
+default_groups = [
+    group for group in DEFAULT_GROUPS if group in supported_groups
+]
 
 st.set_page_config(
     page_title="Grocery Basket Optimizer",
     page_icon="🛒",
-    layout="centered"
+    layout="centered",
 )
 
 st.title("🛒 Grocery Basket Optimizer")
 
 st.write(
-    "Build your grocery basket, set your shopping preferences, "
-    "and compare whether one or two stores gives you the better deal."
+    "Build a grocery basket and compare estimated checkout costs across "
+    "Walmart, No Frills, and Food Basics."
 )
 
+if pd.notna(latest_date):
+    st.caption(f"Prices last updated: {latest_date:%Y-%m-%d}")
+
 st.caption(
-    "Demo using static, illustrative sample data for 15 items across "
-    "three stores. Prices are not live."
+    "Prices come from the latest collected store snapshot and may differ "
+    "from checkout prices. Variable-weight item costs are estimates."
 )
 
 st.divider()
@@ -32,51 +257,134 @@ st.divider()
 st.header("Build Your Basket")
 
 st.caption(
-    "Quantity represents the number of packages or units of the listed "
-    "sample product and multiplies its listed price."
+    "Choose groceries, then enter how much you need. Fixed packages are "
+    "rounded up to whole packages; variable-weight items are estimated "
+    "from the requested weight."
 )
 
-available_items = sorted(prices["item"].unique())
-
-selected_items = st.multiselect(
+selected_groups = st.multiselect(
     "Select the grocery items you want to buy:",
-    options=available_items
+    options=supported_groups,
+    default=default_groups,
+    format_func=group_label,
 )
 
-basket_rows = []
+basket = []
 
-for item in selected_items:
-    quantity = st.number_input(
-        f"Quantity for {item.title()}:",
-        min_value=1,
-        value=1,
-        step=1,
-        key=f"quantity_{item}"
-    )
+for comparison_group in selected_groups:
+    label = group_label(comparison_group)
+    kind = request_kind(comparison_group, prices)
 
-    basket_rows.append({
-        "item": item,
-        "quantity": quantity
-    })
+    with st.container(border=True):
+        st.markdown(f"**{label}**")
 
-basket = pd.DataFrame(basket_rows)
+        if kind == "weight":
+            quantity_column, unit_column = st.columns([2, 1])
+            default_unit = default_weight_unit(comparison_group)
 
-if not basket.empty:
-    total_units = int(basket["quantity"].sum())
+            with unit_column:
+                unit = st.selectbox(
+                    "Unit",
+                    options=["g", "kg"],
+                    index=0 if default_unit == "g" else 1,
+                    key=f"unit_{comparison_group}",
+                )
 
-    st.caption(
-        f"{len(basket)} different items selected • "
-        f"{total_units} total units"
-    )
+            with quantity_column:
+                if unit == "g":
+                    quantity = st.number_input(
+                        "Quantity",
+                        min_value=50.0,
+                        value=default_weight_quantity(
+                            comparison_group,
+                            unit,
+                        ),
+                        step=50.0,
+                        format="%.0f",
+                        key=f"quantity_{comparison_group}_{unit}",
+                    )
+                else:
+                    quantity = st.number_input(
+                        "Quantity",
+                        min_value=0.1,
+                        value=default_weight_quantity(
+                            comparison_group,
+                            unit,
+                        ),
+                        step=0.1,
+                        format="%.1f",
+                        key=f"quantity_{comparison_group}_{unit}",
+                    )
 
-    with st.expander("View basket details"):
-        basket_display = basket.copy()
-        basket_display["item"] = basket_display["item"].str.title()
+        elif kind == "volume":
+            quantity_column, unit_column = st.columns([2, 1])
 
+            with unit_column:
+                unit = st.selectbox(
+                    "Unit",
+                    options=["mL", "L"],
+                    index=1,
+                    key=f"unit_{comparison_group}",
+                )
+
+            with quantity_column:
+                quantity = st.number_input(
+                    "Quantity",
+                    min_value=50.0 if unit == "mL" else 0.1,
+                    value=1000.0 if unit == "mL" else 1.0,
+                    step=50.0 if unit == "mL" else 0.1,
+                    format="%.0f" if unit == "mL" else "%.1f",
+                    key=f"quantity_{comparison_group}_{unit}",
+                )
+
+        elif kind == "packages":
+            quantity = st.number_input(
+                "Number of packages or loaves",
+                min_value=1,
+                value=1,
+                step=1,
+                key=f"quantity_{comparison_group}",
+            )
+            unit = "count"
+
+        else:
+            quantity = st.number_input(
+                "Number of individual items",
+                min_value=1,
+                value=18,
+                step=1,
+                key=f"quantity_{comparison_group}",
+            )
+            unit = "count"
+
+        basket.append(
+            {
+                "comparison_group": comparison_group,
+                "quantity": quantity,
+                "unit": unit,
+            }
+        )
+
+if basket:
+    st.caption(f"{len(basket)} grocery items selected")
+
+    with st.expander("View requested basket"):
+        basket_display = pd.DataFrame(
+            {
+                "Grocery item": [
+                    group_label(item["comparison_group"])
+                    for item in basket
+                ],
+                "Requested quantity": [
+                    format_quantity(item["quantity"], item["unit"])
+                    for item in basket
+                ],
+            }
+        )
         st.dataframe(
             basket_display,
-            use_container_width=True,
-            hide_index=True
+            width="stretch",
+            hide_index=True,
         )
 
 with st.sidebar:
@@ -87,7 +395,7 @@ with st.sidebar:
         options=[1, 2],
         format_func=lambda value: (
             "One store" if value == 1 else "Up to two stores"
-        )
+        ),
     )
 
     savings_threshold = 5.0
@@ -98,187 +406,193 @@ with st.sidebar:
             min_value=0.0,
             value=5.0,
             step=0.5,
-            format="%.2f"
+            format="%.2f",
         )
 
         st.caption(
-            "The optimizer will only recommend another store if "
-            "the extra savings meet your threshold."
+            "A second store is recommended only when its estimated dollar "
+            "savings meet this threshold."
         )
 
 if st.button(
     "Optimize Basket",
     type="primary",
-    use_container_width=True
+    width="stretch",
 ):
-    if basket.empty:
+    if not basket:
         st.warning("Please select at least one grocery item.")
     else:
         try:
-            result = optimize_basket(
-                prices=prices,
+            result = optimize_real_price_basket(
                 basket=basket,
+                prices=prices,
                 max_stores=max_stores,
-                savings_threshold=savings_threshold
+                savings_threshold=savings_threshold,
             )
 
             st.divider()
             st.subheader("Recommendation")
 
-            recommended = result["recommended_option"]
+            best_single = result["best_single"]
+            best_pair = result["best_pair"]
+            savings = result["savings"]
 
-            recommended_stores = " + ".join(recommended["stores"])
-            recommended_cost = recommended["total_cost"]
+            if best_single is not None and best_pair is not None:
+                single_column, pair_column, savings_column = st.columns(3)
 
-            col1, col2, col3 = st.columns([2, 1, 1])
+                single_column.metric(
+                    "Best single-store estimated total",
+                    format_currency(best_single["total_cost"]),
+                )
+                single_column.caption(best_single["stores"][0])
 
-            col1.metric(
-                "Recommended Store Plan",
-                recommended_stores
+                pair_column.metric(
+                    "Best two-store estimated total",
+                    format_currency(best_pair["total_cost"]),
+                )
+                pair_column.caption(" + ".join(best_pair["stores"]))
+
+                savings_column.metric(
+                    "Dollar savings",
+                    format_currency(savings),
+                )
+                savings_column.caption("Compared with the best single store")
+
+            elif best_pair is not None:
+                st.metric(
+                    "Best two-store estimated total",
+                    format_currency(best_pair["total_cost"]),
+                )
+                st.caption(" + ".join(best_pair["stores"]))
+
+            else:
+                st.metric(
+                    "Best single-store estimated total",
+                    format_currency(best_single["total_cost"]),
+                )
+                st.caption(best_single["stores"][0])
+
+            st.success(
+                recommendation_message(
+                    result,
+                    savings_threshold,
+                    max_stores,
+                )
             )
 
-            col2.metric(
-                "Estimated Basket Cost",
-                f"${recommended_cost:.2f}"
-            )
-
-            if max_stores == 1:
-                if result["second_best_single"] is not None:
-                    second_best = result["second_best_single"]
-
-                    single_store_savings = (
-                        second_best["total_cost"]
-                        - result["best_single"]["total_cost"]
-                    )
-
-                    next_best_store = second_best["stores"][0]
-
-                    col3.metric(
-                        f"Savings vs {next_best_store}",
-                        f"${single_store_savings:.2f}"
-                    )
-                else:
-                    col3.metric(
-                        "Alternative Single Store",
-                        "Unavailable"
-                    )
-            elif result["best_single"] is None:
-                col3.metric(
-                    "Single-Store Option",
-                    "Unavailable"
-                )
-            elif result["best_multi"] is None:
-                col3.metric(
-                    "Two-Store Option",
-                    "Unavailable"
-                )
-            else:
-                col3.metric(
-                    "Savings vs Best Single Store",
-                     f"${result['savings']:.2f}"
-                )
-
-            if (
-                result["best_single"] is not None
-                and result["best_multi"] is not None
-            ):
-                savings = result["savings"]
-
-                if result["worth_it"]:
-                    decision_message = (
-                        f"The two-store option saves \\${savings:.2f} versus "
-                        f"the best single store, meeting your "
-                        f"\\${savings_threshold:.2f} threshold. "
-                        f"Recommendation: shop at {recommended_stores}."
-                    )
-                elif savings <= 0:
-                    decision_message = (
-                        f"The two-store option saves \\${savings:.2f} versus "
-                        f"the best single store. Your threshold is "
-                        f"\\${savings_threshold:.2f}, but the optimizer "
-                        "requires positive savings. "
-                        f"Recommendation: shop at {recommended_stores}."
-                    )
-                else:
-                    decision_message = (
-                        f"The two-store option saves \\${savings:.2f} versus "
-                        f"the best single store, below your "
-                        f"\\${savings_threshold:.2f} threshold. "
-                        f"Recommendation: shop at {recommended_stores}."
-                    )
-
-                st.info(decision_message)
-            else:
-                st.info(result["recommendation"])
-
-            if (
-                result["best_single"] is not None
-                and result["best_multi"] is not None
-            ):
+            if best_single is not None and best_pair is not None:
                 st.subheader("Option Comparison")
 
-                comparison = pd.DataFrame({
-                    "Option": [
-                        "Best single store",
-                        "Best two-store combination"
-                    ],
-                    "Store(s)": [
-                        result["best_single"]["stores"][0],
-                        " + ".join(result["best_multi"]["stores"])
-                    ],
-                    "Total Cost": [
-                        result["best_single"]["total_cost"],
-                        result["best_multi"]["total_cost"]
-                    ]
-                })
-
-                comparison["Total Cost"] = comparison["Total Cost"].map(
-                    "${:.2f}".format
+                comparison = pd.DataFrame(
+                    {
+                        "Option": [
+                            "Best single store",
+                            "Best two-store combination",
+                        ],
+                        "Store(s)": [
+                            best_single["stores"][0],
+                            " + ".join(best_pair["stores"]),
+                        ],
+                        "Estimated total": [
+                            best_single["total_cost"],
+                            best_pair["total_cost"],
+                        ],
+                    }
                 )
 
                 st.dataframe(
                     comparison,
-                    use_container_width=True,
-                    hide_index=True
+                    width="stretch",
+                    hide_index=True,
+                    column_config={
+                        "Estimated total": st.column_config.NumberColumn(
+                            format="$%.2f"
+                        )
+                    },
                 )
 
             st.subheader("Shopping Plan")
 
-            shopping_plan = recommended["shopping_plan"].copy()
+            recommended = result["recommended_option"]
+            shopping_plan_rows = []
 
-            shopping_plan = shopping_plan[
-                [
-                    "item",
-                    "quantity",
-                    "store",
-                    "price",
-                    "total_item_cost"
-                ]
-            ].sort_values(["store", "item"])
+            for item in recommended["shopping_plan"]:
+                package_count = item.get("package_count")
+                shopping_plan_rows.append(
+                    {
+                        "Grocery item": group_label(
+                            item["comparison_group"]
+                        ),
+                        "Store": item["store"],
+                        "Product": item.get("product_title") or "—",
+                        "Requested quantity": format_quantity(
+                            item["requested_quantity"],
+                            item["requested_unit"],
+                        ),
+                        "Package size": package_size_display(item),
+                        "Packages to buy": (
+                            str(int(package_count))
+                            if package_count is not None
+                            else "Variable weight"
+                        ),
+                        "Fulfilled quantity": format_quantity(
+                            item["fulfilled_quantity"],
+                            item["fulfilled_unit"],
+                        ),
+                        "Estimated item cost": item["estimated_item_cost"],
+                        "Sale status": sale_status_display(item),
+                        "Product link": item.get("product_url"),
+                    }
+                )
 
-            shopping_plan = shopping_plan.rename(columns={
-                "item": "Item",
-                "quantity": "Quantity",
-                "store": "Store",
-                "price": "Unit Price",
-                "total_item_cost": "Item Total"
-            })
-
-            shopping_plan["Item"] = shopping_plan["Item"].str.title()
-
-            shopping_plan["Unit Price"] = shopping_plan["Unit Price"].map(
-                "${:.2f}".format
-            )
-
-            shopping_plan["Item Total"] = shopping_plan["Item Total"].map(
-                "${:.2f}".format
+            shopping_plan = pd.DataFrame(shopping_plan_rows).sort_values(
+                ["Store", "Grocery item"]
             )
 
             st.dataframe(
                 shopping_plan,
-                use_container_width=True,
-                hide_index=True
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "Estimated item cost": st.column_config.NumberColumn(
+                        format="$%.2f"
+                    ),
+                    "Product link": st.column_config.LinkColumn(
+                        "Product link",
+                        display_text="View product",
+                    ),
+                },
             )
+
+            incomplete_stores = {
+                store: option["missing_groups"]
+                for store, option in result["store_coverage"].items()
+                if not option["complete"]
+            }
+
+            if incomplete_stores:
+                with st.expander("Store coverage"):
+                    st.caption(
+                        "These stores could not fulfill every requested "
+                        "item with a compatible listing."
+                    )
+                    coverage = pd.DataFrame(
+                        {
+                            "Store": list(incomplete_stores),
+                            "Missing grocery items": [
+                                ", ".join(
+                                    group_label(group)
+                                    for group in missing_groups
+                                )
+                                for missing_groups in incomplete_stores.values()
+                            ],
+                        }
+                    )
+                    st.dataframe(
+                        coverage,
+                        width="stretch",
+                        hide_index=True,
+                    )
 
         except ValueError as error:
             st.error(str(error))
