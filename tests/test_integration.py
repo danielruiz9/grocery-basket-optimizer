@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.integration import (
+    DEFAULT_INPUT_PATHS,
     SUPERSET_COLUMNS,
     integrate_price_files,
     integrate_price_frames,
@@ -107,15 +108,24 @@ class TestCrossStoreIntegration(unittest.TestCase):
             ]
         )
 
-        result = integrate_price_frames([walmart, nofrills, foodbasics])
+        metro = pd.DataFrame([
+            _row(
+                "Metro Canada", "https://example.test/metro/apples",
+                "Gala Apples", "fresh_apples", price=0.439,
+                regular_price_unit="kg", regular_price_text="$6.59/kg",
+                displayed_price_text="$0.68 avg. ea.",
+            ),
+        ])
+        result = integrate_price_frames([walmart, nofrills, foodbasics, metro])
 
         self.assertEqual(result.duplicates_removed, 1)
-        self.assertEqual(len(result.combined), 6)
-        self.assertEqual(len(result.optimizer_ready), 3)
+        self.assertEqual(len(result.combined), 7)
+        self.assertEqual(len(result.optimizer_ready), 4)
         self.assertEqual(
             result.optimizer_ready["store"].tolist(),
             [
                 "Food Basics Canada",
+                "Metro Canada",
                 "No Frills Canada",
                 "Walmart Canada",
             ],
@@ -143,6 +153,12 @@ class TestCrossStoreIntegration(unittest.TestCase):
         ].iloc[0]
         self.assertEqual(foodbasics_row["multi_buy_quantity"], 2)
         self.assertEqual(foodbasics_row["single_item_price"], 0.44)
+        metro_row = result.optimizer_ready.loc[
+            result.optimizer_ready["store"].eq("Metro Canada")
+        ].iloc[0]
+        self.assertEqual(metro_row["regular_price_unit"], "kg")
+        self.assertEqual(metro_row["displayed_price_text"], "$0.68 avg. ea.")
+        self.assertTrue(pd.isna(walmart_row["regular_price_unit"]))
 
         summary = summarize_integration(result)
         self.assertEqual(
@@ -200,11 +216,18 @@ class TestCrossStoreIntegration(unittest.TestCase):
         ):
             integrate_price_frames([rows])
 
-    def test_loads_three_files_and_writes_both_outputs(self):
+    def test_default_inputs_include_all_four_stores(self):
+        self.assertEqual([path.name for path in DEFAULT_INPUT_PATHS], [
+            "walmart_prices_normalized.csv", "nofrills_prices_normalized.csv",
+            "foodbasics_prices_normalized.csv", "metro_prices_normalized.csv",
+        ])
+
+    def test_loads_four_files_and_writes_both_outputs(self):
         stores = (
             "Walmart Canada",
             "No Frills Canada",
             "Food Basics Canada",
+            "Metro Canada",
         )
 
         with tempfile.TemporaryDirectory() as temp_directory:
@@ -237,9 +260,9 @@ class TestCrossStoreIntegration(unittest.TestCase):
             audit = pd.read_csv(audit_path)
             optimizer = pd.read_csv(optimizer_path)
 
-        self.assertEqual(len(result.combined), 3)
-        self.assertEqual(len(audit), 3)
-        self.assertEqual(len(optimizer), 3)
+        self.assertEqual(len(result.combined), 4)
+        self.assertEqual(len(audit), 4)
+        self.assertEqual(len(optimizer), 4)
         self.assertEqual(list(audit.columns), list(SUPERSET_COLUMNS))
 
 

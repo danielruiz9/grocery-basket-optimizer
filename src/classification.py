@@ -124,7 +124,13 @@ def _classify_chicken_breast(normalized_name, tokens):
     if "chicken" not in tokens or not {"breast", "breasts"} & tokens:
         return None
 
-    if {"cooked", "coocked", "souvlaki"} & tokens:
+    # Preparation/deli descriptions must not compete with raw meat. A
+    # "roast" can be ambiguous, so leave it unsupported rather than guess.
+    if {
+        "cooked", "coocked", "roast", "roasted", "rotisserie", "grilled",
+        "smoked", "prepared", "stuffed", "souvlaki", "sandwich", "salad",
+        "soup", "sauce", "meal", "meals",
+    } & tokens or PASTA_TERMS & tokens or "ready to eat" in normalized_name:
         return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
@@ -164,6 +170,18 @@ def _classify_chicken_breast(normalized_name, tokens):
 
 
 def _classify_bread(normalized_name, tokens):
+    bread_terms = {"bread", "loaf", "loaves", "bagel", "bagels", "baguette", "baguettes"}
+    if bread_terms & tokens:
+        if {
+            "naan", "pita", "flatbread", "flatbreads", "wrap", "wraps",
+            "tortilla", "tortillas", "pizza",
+            "chips", "crisps", "crumbs", "pudding",
+        } & tokens or (
+            {"sandwich", "sandwiches"} & tokens
+            and "sandwich bread" not in normalized_name
+        ):
+            return _unknown_classification()
+
     if {
         "cake",
         "cakes",
@@ -174,7 +192,9 @@ def _classify_bread(normalized_name, tokens):
         "muffin",
         "muffins",
     } & tokens:
-        return None
+        # Do not let prepared bread fall through to an ingredient's group
+        # (for example, frozen garlic cheese bread becoming plain cheese).
+        return _unknown_classification() if bread_terms & tokens else None
 
     attributes = _extract_attributes(normalized_name)
 
@@ -186,6 +206,17 @@ def _classify_bread(normalized_name, tokens):
     if {"baguette", "baguettes"} & tokens:
         return _classification(
             "bakery", "bread", "baguettes", "baguette", attributes
+        )
+
+    # Recognized whole bakery-loaf style, independent of retailer/brand.
+    # Do not infer artisan bread from sourdough, grains, or "loaf" alone;
+    # these also describe ordinary packaged sliced breads.
+    if (
+        "asiago cheese bread loaf" in normalized_name
+        and not {"sliced", "sandwich"} & tokens
+    ):
+        return _classification(
+            "bakery", "bread", "artisan_bread", "loaf", attributes
         )
 
     if {"bread", "loaf", "loaves"} & tokens:
@@ -212,7 +243,9 @@ def _classify_pasta(normalized_name, tokens):
         return None
 
     if (
-        "macaroni and cheese" in normalized_name
+        {"sauce", "soup", "salad", "meal", "meals", "cooked", "prepared"} & tokens
+        or "ready to eat" in normalized_name
+        or "macaroni and cheese" in normalized_name
         or "macaroni cheese" in normalized_name
         or "mac and cheese" in normalized_name
         or "mac n cheese" in normalized_name
@@ -295,7 +328,7 @@ def _classify_produce(normalized_name, tokens):
             "produce", "apples", "fresh_apples", product_form, attributes
         )
 
-    if {"banana", "bananas"} & tokens:
+    if {"banana", "bananas", "plantain", "plantains"} & tokens:
         excluded_forms = {
             "blend",
             "bread",
@@ -309,6 +342,14 @@ def _classify_produce(normalized_name, tokens):
             "cookies",
             "covered",
             "dried",
+            "dessert",
+            "desserts",
+            "custard",
+            "pudding",
+            "milkshake",
+            "fried",
+            "cooked",
+            "flavor",
             "flavour",
             "flavored",
             "flavoured",
@@ -325,27 +366,22 @@ def _classify_produce(normalized_name, tokens):
             "smoothie",
             "steamed",
             "yogurt",
+            "yoghurt",
         }
 
-        if excluded_forms & tokens:
-            return None
+        if excluded_forms & tokens or "ice cream" in normalized_name:
+            return _unknown_classification()
 
         product_form = "bagged" if {"bag", "bagged"} & tokens else "loose"
+        if {"plantain", "plantains"} & tokens:
+            return _classification(
+                "produce", "plantains", "fresh_plantains", product_form, attributes
+            )
         comparison_group = (
             "cooking_bananas" if "cooking" in tokens else "fresh_bananas"
         )
         return _classification(
             "produce", "bananas", comparison_group, product_form, attributes
-        )
-
-    if {"plantain", "plantains"} & tokens:
-        product_form = "bagged" if {"bag", "bagged"} & tokens else "loose"
-        return _classification(
-            "produce",
-            "plantains",
-            "fresh_plantains",
-            product_form,
-            attributes,
         )
 
     return None
@@ -358,6 +394,12 @@ def _classify_cheese(normalized_name, tokens):
 
     if not cheese_terms & tokens:
         return None
+
+    if {
+        "cracker", "crackers", "chips", "crisps", "puffs", "sauce",
+        "soup", "dip", "sandwich", "sandwiches", "dessert", "desserts",
+    } & tokens or "cheese pizza" in normalized_name:
+        return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
 

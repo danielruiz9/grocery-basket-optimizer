@@ -11,6 +11,7 @@ DEFAULT_INPUT_PATHS = (
     PROJECT_ROOT / "data" / "walmart_prices_normalized.csv",
     PROJECT_ROOT / "data" / "nofrills_prices_normalized.csv",
     PROJECT_ROOT / "data" / "foodbasics_prices_normalized.csv",
+    PROJECT_ROOT / "data" / "metro_prices_normalized.csv",
 )
 DEFAULT_AUDIT_OUTPUT_PATH = (
     PROJECT_ROOT / "data" / "all_stores_prices_normalized.csv"

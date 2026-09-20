@@ -5,6 +5,88 @@ from src.classification import classify_product, normalize_product_name
 
 class TestProductClassification(unittest.TestCase):
 
+    def test_prepared_chicken_does_not_compete_with_raw_chicken(self):
+        for title in (
+            "Oven Roasted Chicken Breast Strips",
+            "Cajun Chicken Breast Roast",
+            "Roast Chicken Breast",
+            "Fully Cooked Chicken Breast",
+            "Fully Coocked Chicken Breast Slices",
+            "Rotisserie Chicken Breast",
+            "Grilled Chicken Breast",
+            "Smoked Chicken Breast Slices",
+            "Prepared Chicken Breast",
+            "Ready-to-Eat Chicken Breast Strips",
+            "Cheese Stuffed Chicken Breast",
+            "Chicken Breast Pasta Salad",
+            "Chicken Breast Soup",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+
+    def test_raw_chicken_forms_are_preserved(self):
+        for title, group in (
+            ("Boneless Skinless Chicken Breasts", "chicken_breast_boneless"),
+            ("Bone-In Chicken Breasts", "chicken_breast_bone_in"),
+            ("Chicken Breast Fillet", "chicken_breast"),
+            ("Uncooked Chicken Breast Strips", "chicken_breast_strips"),
+            ("Raw Diced Chicken Breast", "chicken_breast_diced"),
+            ("Breaded Chicken Breast Strips", "breaded_chicken_breast"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
+
+    def test_banana_desserts_and_processed_plantains_are_unsupported(self):
+        for title in (
+            "Banana Ice Cream with Fudge Chunks and Walnuts, Chunky Monkey",
+            "Banana Ice-Cream", "Banana Dessert", "Banana Pudding",
+            "Banana Custard", "Banana Milkshake", "Banana Flavor Snack",
+            "Banana Yoghurt", "Banana Flavoured Cream Cheese",
+            "Plantain Chips", "Fried Plantains", "Cooked Plantains",
+            "Steamed Cooking Bananas",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+
+    def test_fresh_banana_varieties_and_cooking_groups_remain_distinct(self):
+        for title, group in (
+            ("Organic Banana", "fresh_bananas"),
+            ("Miniature banana", "fresh_bananas"),
+            ("Thai Banana", "fresh_bananas"),
+            ("Green banana", "fresh_bananas"),
+            ("Green Cooking Bananas", "cooking_bananas"),
+            ("Plantains, Single", "fresh_plantains"),
+            ("Plantain Cooking Bananas", "fresh_plantains"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
+
+    def test_pasta_bread_and_cheese_search_noise_is_unsupported(self):
+        for title in (
+            "Pasta Sauce", "Pasta Salad", "Prepared Penne Meal",
+            "Cooked Spaghetti", "White Cheddar Macaroni and Cheese",
+            "Naan Bread", "Pita Bread", "Bread Pudding", "Bagel Chips",
+            "Frozen Garlic Cheese Bread",
+            "Cheddar Cheese Crackers", "Cheese Sauce", "Cheese Pizza",
+            "Cream Cheese Dip", "Cheddar Cheese Sandwich",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+
+    def test_legitimate_pasta_bread_and_cheese_products_are_preserved(self):
+        for title, group in (
+            ("Rotini", "dry_pasta"), ("Cavatappi", "dry_pasta"),
+            ("Fresh Pasta", "fresh_pasta"), ("Cheese Tortellini", "filled_pasta"),
+            ("White Sandwich Bread", "sliced_bread"),
+            ("Asiago Cheese Bread Loaf", "artisan_bread"),
+            ("Pizza Mozzarella Cheese", "mozzarella_cheese"),
+            ("Shredded Double Cheddar Cheese Blend", "cheddar_cheese"),
+            ("Cheddar-Style Processed Cheese Slices", "processed_cheese"),
+            ("Nibblers Original Natural Cheese Snacks", "cheese_unspecified_type"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
+
     def test_normalizes_case_accents_and_punctuation(self):
         normalized = normalize_product_name("  Café-Style BAGELS!!!  ")
 
@@ -242,6 +324,34 @@ class TestProductClassification(unittest.TestCase):
                     "artisan_bread",
                 )
                 self.assertEqual(result["product_form"], "loaf")
+
+    def test_recognizes_asiago_bakery_loaf_independent_of_retailer(self):
+        for title in (
+            "Asiago Cheese Bread Loaf",
+            "Front Street Bakery Asiago Cheese Bread Loaf, 454 g",
+            "ASIAGO-CHEESE BREAD LOAF",
+        ):
+            with self.subTest(title=title):
+                result = classify_product(title)
+                self.assertEqual(result["comparison_group"], "artisan_bread")
+                self.assertEqual(result["product_form"], "loaf")
+
+    def test_specialty_names_do_not_automatically_mean_artisan_bread(self):
+        # Metro's pages show these three as packaged, pre-sliced loaves,
+        # despite their broad "artisan & specialty"/fresh-bread aisle paths.
+        for title in (
+            "Sourdough Bread, Rustico",
+            "Everything Loaf Bread Made with Whole Grains",
+            "Flax & Quinoa Loaf Bread With 100% Whole Grain",
+            "Sliced Sourdough Bread",
+            "Whole Grain 12-Grain Sliced Bread",
+            "Sliced Asiago Cheese Bread Loaf",
+            "Asiago Cheese Sandwich Bread Loaf",
+        ):
+            with self.subTest(title=title):
+                result = classify_product(title)
+                self.assertEqual(result["comparison_group"], "sliced_bread")
+                self.assertEqual(result["product_form"], "sliced_loaf")
 
     def test_preserves_cheese_type_across_product_forms(self):
         block = classify_product("Old Cheddar Cheese Block")
