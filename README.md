@@ -54,9 +54,9 @@ The current collected snapshot covers:
 
 Supported comparison groups currently present in the optimizer-ready data are:
 
-- **Meat:** chicken breast, boneless chicken breast, diced chicken breast, and chicken breast strips.
+- **Meat:** chicken breast, boneless chicken breast, and diced chicken breast.
 - **Eggs:** medium, large, and extra-large eggs.
-- **Produce:** fresh apples, fresh bananas, and fresh plantains.
+- **Produce:** fresh apples, fresh bananas, cooking bananas, and fresh plantains.
 - **Pasta:** dry pasta.
 - **Bakery:** sliced bread and artisan bread.
 - **Cheese:** cheddar, mozzarella, marble, Swiss, cottage, processed, and cheese with an unspecified type.
