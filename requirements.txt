@@ -1,5 +1,6 @@
 beautifulsoup4
 numpy
 pandas
+pytest
 requests
-streamlit
+streamlit>=1.51,<2

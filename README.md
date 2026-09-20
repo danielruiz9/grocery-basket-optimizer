@@ -1,129 +1,138 @@
 # Grocery Basket Optimizer
 
-A Streamlit decision-support MVP that compares a grocery basket across stores and recommends whether shopping at one or two locations is worthwhile.
+A quantity-aware Streamlit app that compares grocery baskets across Walmart, No Frills, and Food Basics using collected Canadian store listing data.
 
-## Problem and Target User
+## What the App Does
 
-Grocery shoppers can compare individual flyer deals, but that does not answer a more practical question: which store or combination of stores is best for the full basket?
+Grocery prices are difficult to compare when stores sell different package sizes, use variable-weight pricing, or attach conditions to promotions. This project turns those listings into practical basket estimates for shoppers deciding whether a second stop is worth it.
 
-The initial target user is a price-conscious grocery shopper in the Greater Toronto Area who buys a weekly basket and may visit a second store when the savings justify the extra stop.
+Users can:
 
-## Current MVP
+- Choose grocery items from the currently supported comparison groups.
+- Enter a requested quantity in a compatible unit.
+- Compare the best complete one-store and two-store plans.
+- Set the minimum dollar savings required to justify an extra stop.
+- Review the selected products, package counts, fulfilled quantities, estimated item costs, and product links.
 
-The app currently lets a user:
+## How It Works
 
-- Select grocery items and integer quantities from the sample dataset.
-- Choose a maximum of one or two stores.
-- Set a minimum savings threshold for visiting an additional store.
-- Compare the cheapest complete single-store and two-store plans when both exist.
-- View the recommended stores, estimated basket cost, option comparison, and item-level shopping plan.
+1. **Product collection:** store-specific collectors capture fields exposed by Walmart Canada, No Frills Canada, and Food Basics Canada search or product data.
+2. **Classification:** deterministic title rules assign supported products to categories, product families, physical forms, attributes, and exact comparison groups. Uncertain listings remain unsupported instead of being forced into a group.
+3. **Unit normalization:** package and listed-unit prices are converted into compatible standardized units, with normalization errors and data-quality warnings preserved.
+4. **Package-aware basket costing:** fixed packages use whole-package ceiling calculations, variable-weight products scale from their listed unit price, and multi-buy pricing is used only when the known threshold is met.
+5. **Store optimization:** the optimizer finds the lowest-cost complete single-store plan and, when enabled, the lowest-cost plan across each store pair. It recommends the second stop only when its dollar savings meet the user's threshold.
 
-The optimizer also handles incomplete store coverage. It can recommend a two-store plan when no single store covers the basket, fall back to a complete single store when no two-store combination is available, and report an error when neither option can cover every item.
+```text
+store pages
+→ collectors
+→ normalized product data
+→ cross-store integration
+→ basket costing
+→ optimizer
+→ Streamlit app
+```
 
-## How the Optimization Works
+## Technical Highlights
 
-1. Validate the required columns, basket quantities, and price values.
-2. Normalize item names, combine duplicate basket entries, and calculate quantity-adjusted item costs.
-3. Evaluate every store individually and retain complete single-store plans.
-4. Evaluate every pair of stores, assigning each item to its cheaper store within that pair, and retain pairs that cover the full basket.
-5. If both options exist, recommend two stores only when the savings are positive and meet the user's threshold. Otherwise, recommend the best complete plan available.
+- Python and pandas for collection, validation, transformation, and optimization.
+- Streamlit for the interactive basket-building and recommendation interface.
+- `requests` and Beautiful Soup for store collection where those tools match the retailer's page structure.
+- Deterministic, rule-based product classification with conservative unsupported handling.
+- Normalized price comparison across compatible weight, volume, and count units.
+- Separate costing rules for fixed-package and variable-weight products.
+- Explicit multi-buy threshold and single-item price handling.
+- Cross-store schema alignment, deduplication, and standardized-unit validation.
+- Automated coverage for pricing, classification, collectors, integration, basket costing, both optimizer layers, and UI-facing result shapes.
 
-## Benchmark Result
+## Current Scope
 
-The included ten-item sample basket produces the following result:
+The current collected snapshot covers:
 
-| Option | Store plan | Total cost |
-| --- | --- | ---: |
-| Best single store | Food Basics | $53.37 |
-| Cheapest two-store plan | Food Basics + Walmart | $51.07 |
+- Walmart Canada
+- No Frills Canada
+- Food Basics Canada
 
-The two-store plan saves **$2.30**. With the app's default **$5.00 minimum savings threshold**, the recommendation is to shop only at Food Basics because the additional savings do not justify another stop under that rule.
+Supported comparison groups currently present in the optimizer-ready data are:
 
-This illustrates the product decision behind the MVP: the lowest mathematical cost is not always the recommended plan once the effort of an additional store is considered.
+- **Meat:** chicken breast, boneless chicken breast, diced chicken breast, and chicken breast strips.
+- **Eggs:** medium, large, and extra-large eggs.
+- **Produce:** fresh apples, fresh bananas, and fresh plantains.
+- **Pasta:** dry pasta.
+- **Bakery:** sliced bread and artisan bread.
+- **Cheese:** cheddar, mozzarella, marble, Swiss, cottage, processed, and cheese with an unspecified type.
 
-## Sample Data and Assumptions
+Availability varies by store. Comparison-group boundaries are respected: for example, processed cheese does not compete with cheddar, and fresh bananas do not compete with plantains.
 
-The repository contains a manually created, static sample dataset:
+## Data Snapshot
 
-- `sample_prices.csv`: 45 price rows covering 15 grocery items across Food Basics, No Frills, and Walmart.
-- `sample_basket.csv`: a ten-item basket used for the benchmark and regression test.
-- The current dataset represents a single illustrative pricing period.
+The app reads [`data/optimizer_ready_prices.csv`](data/optimizer_ready_prices.csv), the committed optimizer-ready snapshot produced by the cross-store integration layer. The app does not need to run the collectors or access retailer websites at startup.
 
-Each basket quantity is used as a multiplier of the listed price, so total item cost is calculated as `quantity × price`. Items with the same normalized name are assumed to be comparable across stores. The dataset includes unit and package-size fields, but the current optimizer does not normalize prices by size or match brands and equivalent products.
-
-The data is illustrative and is not live grocery pricing.
-
-## Technology
-
-- Python
-- pandas
-- NumPy
-- Streamlit
-- Python `unittest`
-- Jupyter notebooks
-- CSV data files
+The interface displays the latest observation date in that file. Prices are estimates from the collected snapshot and may differ from checkout prices.
 
 ## Repository Structure
 
 ```text
 grocery-basket-optimizer/
-├── app.py
+├── app.py                         # Streamlit application
 ├── data/
-│   ├── sample_basket.csv
-│   └── sample_prices.csv
+│   ├── *_prices_normalized.csv   # Store-level and combined normalized outputs
+│   ├── optimizer_ready_prices.csv
+│   └── sample_*.csv              # Original sample-MVP fixtures
 ├── notebooks/
 │   ├── optimizer_v0.ipynb
 │   └── optimizer_v1.ipynb
 ├── src/
-│   ├── __init__.py
-│   └── optimizer.py
-├── tests/
-│   └── test_optimizer.py
-├── README.md
+│   ├── collectors/
+│   │   ├── common.py
+│   │   ├── foodbasics.py
+│   │   ├── nofrills.py
+│   │   └── walmart.py
+│   ├── basket_costing.py
+│   ├── classification.py
+│   ├── integration.py
+│   ├── optimizer.py              # Original sample-data optimizer
+│   ├── pricing.py
+│   └── real_price_optimizer.py   # Quantity-aware real-price optimizer
+├── tests/                         # Offline unit and regression tests
+├── product_spec.md
 ├── requirements.txt
-└── product_spec.md
+└── README.md
 ```
 
-## Run Locally
+## Running Locally
 
-From the repository root:
+From the repository root, create and activate a virtual environment, install the project requirements, and start Streamlit:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-Run the automated tests with:
+On Windows, activate the environment with `.venv\Scripts\activate` instead.
+
+Run the full automated test suite with:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pytest -q
 ```
 
-## Automated Test Coverage
+Collector parsing tests use saved fixtures and do not require live retailer requests.
 
-The current test suite covers:
+## Known Limitations
 
-- Rejection of non-numeric, null, infinite, and negative prices.
-- Acceptance of a zero price.
-- Regression coverage for the benchmark recommendation and totals.
-- A basket that requires two stores for complete coverage.
-- Fallback to a single store when no two-store combination exists.
-- An error when neither one nor two stores can cover the basket.
+- Prices are collected snapshots and are not guaranteed to be real-time.
+- Retailer collection depends on store page structures, including rendered or embedded product data, and live collection can be limited by anti-bot controls.
+- Only explicitly supported comparison groups are included in optimization.
+- Variable-weight item totals are estimates based on the requested weight and listed unit price.
+- Product availability at checkout is not guaranteed by the collected listings.
+- Location, travel time, and the real cost of an additional stop are not yet modeled; the user-supplied dollar threshold is the current convenience rule.
 
-## Current Limitations
+## Future Improvements
 
-- Prices are static sample data and are not refreshed automatically.
-- Product matching relies on generic item names rather than normalized products or brands.
-- Package-size and unit-price equivalence are not used in the optimization.
-- Missing products, substitutions, and sale conditions are not modeled beyond basic store coverage.
-- The convenience tradeoff is represented by a user-entered dollar threshold rather than location or travel information.
-- The optimizer supports at most two stores.
-- The benchmark is an illustrative sample result; real-world savings performance and user validation have not been measured.
-
-## Roadmap
-
-1. **Validate a real-world grocery data model:** build a small manually collected dataset that supports package sizes, unit prices, brand or equivalent-product matching, missing products, and sale-price representation.
-2. **Automate price ingestion and refresh:** after validating that model, explore automated collection and updating, with possible freshness tracking and historical prices.
-3. **Add location and convenience-aware optimization:** incorporate store locations, user location, travel time or distance, and a more realistic cost for making an additional stop.
+- Schedule a weekly data refresh with freshness monitoring.
+- Expand the supported products and stores after validating comparison rules.
+- Add location and travel-time-aware optimization.
+- Model promotions and purchase conditions in greater detail.
