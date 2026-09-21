@@ -1,0 +1,1133 @@
+{
+  "observed_date": "2026-09-20",
+  "store_context": "Loblaws Mclaughlin Road (store 1003)",
+  "source": "Public __NEXT_DATA__ search productTiles captured in the normal browser; first 12 per term, including sponsored products. Reduced to consumed fields; no session/cart data.",
+  "searches": {
+    "chicken breast": [
+      {
+        "title": "Spicy Chicken Burgers",
+        "link": "/en/spicy-chicken-burgers/p/21741185_EA",
+        "packageSizing": "600 g, $2.50/100g",
+        "pricing": {
+          "displayPrice": "$15.00",
+          "price": "15.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Extra Lean Boneless Skinless Chicken Breasts",
+        "link": "/en/extra-lean-boneless-skinless-chicken-breasts/p/21340952_EA",
+        "packageSizing": "1 ea, $13.00/1ea",
+        "pricing": {
+          "displayPrice": "$13.00",
+          "price": "13.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Halal Chicken Wieners",
+        "link": "/en/halal-chicken-wieners/p/21670026_EA",
+        "packageSizing": "375 g, $1.07/100g",
+        "pricing": {
+          "displayPrice": "$4.00",
+          "price": "4.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Boneless Skinless Chicken Breasts",
+        "link": "/en/boneless-skinless-chicken-breasts/p/21551175_EA",
+        "packageSizing": "1.1 kg, $1.91/100g",
+        "pricing": {
+          "displayPrice": "$21.00",
+          "price": "21.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Chicken Breast Boneless Skinless Club Pack",
+        "link": "/en/chicken-breast-boneless-skinless-club-pack/p/20028450_KG",
+        "packageSizing": "$10.76/1kg $4.88/1lb",
+        "pricing": {
+          "displayPrice": "about $12.66",
+          "price": "12.66",
+          "wasPrice": "$24.62"
+        },
+        "uom": "KG",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $11.96"
+        }
+      },
+      {
+        "title": "Halal Boneless Skinless Chicken Breast",
+        "link": "/en/halal-boneless-skinless-chicken-breast/p/21616967_EA",
+        "packageSizing": "1.505 kg, $1.99/100g",
+        "pricing": {
+          "displayPrice": "$30.00",
+          "price": "30.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Extra Lean Chicken Breast Fillets",
+        "link": "/en/extra-lean-chicken-breast-fillets/p/21341048_EA",
+        "packageSizing": "1 ea, $12.00/1ea",
+        "pricing": {
+          "displayPrice": "$12.00",
+          "price": "12.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Club Pack Chicken Breasts, Boneless Skinless",
+        "link": "/en/club-pack-chicken-breasts-boneless-skinless/p/20702394_EA",
+        "packageSizing": "2 kg, $2.00/100g",
+        "pricing": {
+          "displayPrice": "$40.00",
+          "price": "40.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Free From Chicken Breast, Boneless, Skinless",
+        "link": "/en/free-from-chicken-breast-boneless-skinless/p/21668470_KG",
+        "packageSizing": "$26.43/1kg $11.99/1lb",
+        "pricing": {
+          "displayPrice": "about $12.37",
+          "price": "12.37",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Extra Lean Boneless Skinless Chicken Cutlets",
+        "link": "/en/extra-lean-boneless-skinless-chicken-cutlets/p/21662465_EA",
+        "packageSizing": "590 g, $2.17/100g",
+        "pricing": {
+          "displayPrice": "$13.00",
+          "price": "13.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Free From Boneless Skinless Chicken Breasts",
+        "link": "/en/free-from-boneless-skinless-chicken-breasts/p/21668770_KG",
+        "packageSizing": "$25.33/1kg $11.49/1lb",
+        "pricing": {
+          "displayPrice": "about $26.01",
+          "price": "26.01",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Italiano One Step Seasoning",
+        "link": "/en/italiano-one-step-seasoning/p/20118736_EA",
+        "packageSizing": "510 g, $3.53/100g",
+        "pricing": {
+          "displayPrice": "$17.99",
+          "price": "17.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ],
+    "eggs": [
+      {
+        "title": "Large Size Eggs 12 Pack",
+        "link": "/en/large-size-eggs-12-pack/p/20812144001_EA",
+        "packageSizing": "12 ea, $0.33/1ea",
+        "pricing": {
+          "displayPrice": "$3.93",
+          "price": "3.93",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Eggs, Medium",
+        "link": "/en/eggs-medium/p/21685186001_EA",
+        "packageSizing": "30 ea, $0.32/1ea",
+        "pricing": {
+          "displayPrice": "$9.52",
+          "price": "9.52",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Free Run Brown Eggs Large",
+        "link": "/en/free-run-brown-eggs-large/p/20813628001_EA",
+        "packageSizing": "12 ea, $0.60/1ea",
+        "pricing": {
+          "displayPrice": "$7.15",
+          "price": "7.15",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Nature's Best White Eggs, Large",
+        "link": "/en/nature-s-best-white-eggs-large/p/20814983001_EA",
+        "packageSizing": "12 ea, $0.48/1ea",
+        "pricing": {
+          "displayPrice": "$5.75",
+          "price": "5.75",
+          "wasPrice": "$6.21"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $0.46"
+        }
+      },
+      {
+        "title": "Free-Range Large Brown Eggs, Club Pack (30 Count)",
+        "link": "/en/free-range-large-brown-eggs-club-pack-30-count/p/21205224001_EA",
+        "packageSizing": "30 ea, $0.58/1ea",
+        "pricing": {
+          "displayPrice": "$17.25",
+          "price": "17.25",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Premium Large Eggs",
+        "link": "/en/premium-large-eggs/p/20822787001_EA",
+        "packageSizing": "18 ea, $0.25/1ea",
+        "pricing": {
+          "displayPrice": "$4.44",
+          "price": "4.44",
+          "wasPrice": "$6.98"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $2.54"
+        }
+      },
+      {
+        "title": "Organics Large Size Free-Range Brown Eggs 12 Pack",
+        "link": "/en/organics-large-size-free-range-brown-eggs-12-pack/p/20813711001_EA",
+        "packageSizing": "12 ea, $0.67/1ea",
+        "pricing": {
+          "displayPrice": "$7.99",
+          "price": "7.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Naturegg Nest Laid White Eggs, Large",
+        "link": "/en/naturegg-nest-laid-white-eggs-large/p/20816075001_EA",
+        "packageSizing": "12 ea, $0.48/1ea",
+        "pricing": {
+          "displayPrice": "$5.75",
+          "price": "5.75",
+          "wasPrice": "$6.19"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $0.44"
+        }
+      },
+      {
+        "title": "Extra Large Size Eggs 12 Pack",
+        "link": "/en/extra-large-size-eggs-12-pack/p/20812726001_EA",
+        "packageSizing": "12 ea, $0.39/1ea",
+        "pricing": {
+          "displayPrice": "$4.69",
+          "price": "4.69",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Brown Eggs Free Run Omega-3 Size: Large",
+        "link": "/en/brown-eggs-free-run-omega-3-size-large/p/21542380001_EA",
+        "packageSizing": "18 ea, $0.58/1ea",
+        "pricing": {
+          "displayPrice": "$10.49",
+          "price": "10.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Organic Free Range Eggs, 18 Eggs",
+        "link": "/en/organic-free-range-eggs-18-eggs/p/21572055001_EA",
+        "packageSizing": "18 ea, $0.64/1ea",
+        "pricing": {
+          "displayPrice": "$11.49",
+          "price": "11.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Medium Size Eggs 12 Pack",
+        "link": "/en/medium-size-eggs-12-pack/p/20813386001_EA",
+        "packageSizing": "12 ea, $0.32/1ea",
+        "pricing": {
+          "displayPrice": "$3.85",
+          "price": "3.85",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ],
+    "apples": [
+      {
+        "title": "Gerber Puffs, Strawberry & Apple Flavour, Baby Snack",
+        "link": "/en/gerber-puffs-strawberry-apple-flavour-baby-snack/p/20304618003_EA",
+        "packageSizing": "42 g, $9.50/100g",
+        "pricing": {
+          "displayPrice": "$3.99",
+          "price": "3.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$3.00 MIN 2"
+        }
+      },
+      {
+        "title": "Gala Apples, 4 lb bag",
+        "link": "/en/gala-apples-4-lb-bag/p/20767998001_EA",
+        "packageSizing": "1.81 kg, $0.47/100g",
+        "pricing": {
+          "displayPrice": "$8.50",
+          "price": "8.50",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Gerber Lil’ Crunchies Apple Sweet Potato Flavour",
+        "link": "/en/gerber-lil-crunchies-apple-sweet-potato-flavour/p/20782964_EA",
+        "packageSizing": "42 g, $9.50/100g",
+        "pricing": {
+          "displayPrice": "$3.99",
+          "price": "3.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$3.00 MIN 2"
+        }
+      },
+      {
+        "title": "Gerber Multigrain Apples & Oranges Baby Cereal",
+        "link": "/en/gerber-multigrain-apples-oranges-baby-cereal/p/20574634001_EA",
+        "packageSizing": "227 g, $2.64/100g",
+        "pricing": {
+          "displayPrice": "$5.99",
+          "price": "5.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Royal Gala Apples",
+        "link": "/en/royal-gala-apples/p/20083526001_KG",
+        "packageSizing": "$6.61/1kg $3.00/1lb",
+        "pricing": {
+          "displayPrice": "about $1.39",
+          "price": "1.39",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Gerber Stage 3 Multigrain Yogurt Apple Pear Banana Baby Cereal",
+        "link": "/en/gerber-stage-3-multigrain-yogurt-apple-pear-banana/p/20358339002_EA",
+        "packageSizing": "227 g, $2.64/100g",
+        "pricing": {
+          "displayPrice": "$5.99",
+          "price": "5.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Ambrosia Apples",
+        "link": "/en/ambrosia-apples/p/21307212001_EA",
+        "packageSizing": "1.814 kg, $0.52/100g",
+        "pricing": {
+          "displayPrice": "$9.50",
+          "price": "9.50",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Gerber Lil’ Crunchies Mild Cheddar Flavour Toddler Snacks, 12 Months & Up",
+        "link": "/en/gerber-lil-crunchies-mild-cheddar-flavour-toddler/p/20304618007_EA",
+        "packageSizing": "42 g, $9.50/100g",
+        "pricing": {
+          "displayPrice": "$3.99",
+          "price": "3.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$3.00 MIN 2"
+        }
+      },
+      {
+        "title": "Honeycrisp Apples",
+        "link": "/en/honeycrisp-apples/p/20132621001_KG",
+        "packageSizing": "$8.82/1kg $4.00/1lb",
+        "pricing": {
+          "displayPrice": "about $2.12",
+          "price": "2.12",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Cheerios Cereal Apple Cinnamon Family Size",
+        "link": "/en/cheerios-cereal-apple-cinnamon-family-size/p/21103509_EA",
+        "packageSizing": "778 g, $0.64/100g",
+        "pricing": {
+          "displayPrice": "$5.00",
+          "price": "5.00",
+          "wasPrice": "$7.99"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $2.99"
+        }
+      },
+      {
+        "title": "Naturally Imperfect Apples, 6 lb bag",
+        "link": "/en/naturally-imperfect-apples-6-lb-bag/p/20868985001_EA",
+        "packageSizing": "2.72 kg, $0.33/100g",
+        "pricing": {
+          "displayPrice": "$9.00",
+          "price": "9.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Apple Pie Spice",
+        "link": "/en/apple-pie-spice/p/21104061_EA",
+        "packageSizing": "38 g, $17.08/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ],
+    "bananas": [
+      {
+        "title": "Gerber Stage 3 Oat Banana Mango Baby Cereal",
+        "link": "/en/gerber-stage-3-oat-banana-mango-baby-cereal/p/21024946_EA",
+        "packageSizing": "227 g, $2.64/100g",
+        "pricing": {
+          "displayPrice": "$5.99",
+          "price": "5.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Bananas, Bunch",
+        "link": "/en/bananas-bunch/p/20175355001_KG",
+        "packageSizing": "$1.96/1kg $0.89/1lb",
+        "pricing": {
+          "displayPrice": "about $2.25",
+          "price": "2.25",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Gerber Puffs, Banana Flavour, Snack for Babies 8 Mo & Up",
+        "link": "/en/gerber-puffs-banana-flavour-snack-for-babies-8-mo/p/20304618002_EA",
+        "packageSizing": "42 g, $9.50/100g",
+        "pricing": {
+          "displayPrice": "$3.99",
+          "price": "3.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$3.00 MIN 2"
+        }
+      },
+      {
+        "title": "Gerber Stage 3 Multigrain Yogurt Apple Pear Banana Baby Cereal",
+        "link": "/en/gerber-stage-3-multigrain-yogurt-apple-pear-banana/p/20358339002_EA",
+        "packageSizing": "227 g, $2.64/100g",
+        "pricing": {
+          "displayPrice": "$5.99",
+          "price": "5.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Organic Bananas, Bunch",
+        "link": "/en/organic-bananas-bunch/p/20139509001_KG",
+        "packageSizing": "$2.40/1kg $1.09/1lb",
+        "pricing": {
+          "displayPrice": "about $2.64",
+          "price": "2.64",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Gerber Stage 2 Wheat Banana Strawberry Baby Cereal",
+        "link": "/en/gerber-stage-2-wheat-banana-strawberry-baby-cereal/p/20962127_EA",
+        "packageSizing": "227 g, $2.64/100g",
+        "pricing": {
+          "displayPrice": "$5.99",
+          "price": "5.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Mini Bananas, Bunch",
+        "link": "/en/mini-bananas-bunch/p/20033488001_KG",
+        "packageSizing": "$5.05/1kg $2.29/1lb",
+        "pricing": {
+          "displayPrice": "about $2.17",
+          "price": "2.17",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Gerber Organic Yogurt Melts Strawberry Banana Toddler Snack",
+        "link": "/en/gerber-organic-yogurt-melts-strawberry-banana-todd/p/21097185_EA",
+        "packageSizing": "28 g, $18.89/100g",
+        "pricing": {
+          "displayPrice": "$5.29",
+          "price": "5.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$4.00 MIN 2"
+        }
+      },
+      {
+        "title": "Plantains, Single",
+        "link": "/en/plantains-single/p/20111926001_KG",
+        "packageSizing": "$4.41/1kg $2.00/1lb",
+        "pricing": {
+          "displayPrice": "about $1.46",
+          "price": "1.46",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Gerber Organic Wheat & Wholegrain Oat Banana, Baby Cereal",
+        "link": "/en/gerber-organic-wheat-wholegrain-oat-banana-baby-ce/p/21121781_EA",
+        "packageSizing": "208 g, $3.36/100g",
+        "pricing": {
+          "displayPrice": "$6.99",
+          "price": "6.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$5.50 MIN 2"
+        }
+      },
+      {
+        "title": "Manzano Bananas, Bunch",
+        "link": "/en/manzano-bananas-bunch/p/20649591001_KG",
+        "packageSizing": "$4.39/1kg $1.99/1lb",
+        "pricing": {
+          "displayPrice": "about $4.21",
+          "price": "4.21",
+          "wasPrice": null
+        },
+        "uom": "KG",
+        "deal": null
+      },
+      {
+        "title": "Tubes Yogurt Vanilla Flavour 1% M.F.",
+        "link": "/en/tubes-yogurt-vanilla-flavour-1-m-f/p/21547571_EA",
+        "packageSizing": "448 g, $1.00/100g",
+        "pricing": {
+          "displayPrice": "$4.49",
+          "price": "4.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$3.50 MIN 2"
+        }
+      }
+    ],
+    "pasta": [
+      {
+        "title": "White Cheddar Macaroni & Cheese",
+        "link": "/en/white-cheddar-macaroni-cheese/p/21549555_EA",
+        "packageSizing": "175 g, $1.71/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Rotini",
+        "link": "/en/rotini/p/20315613004_EA",
+        "packageSizing": "900 g, $0.25/100g",
+        "pricing": {
+          "displayPrice": "$2.29",
+          "price": "2.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Farfalle Pasta",
+        "link": "/en/farfalle-pasta/p/21404904_EA",
+        "packageSizing": "410 g, $0.73/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Cellentani Pasta",
+        "link": "/en/cellentani-pasta/p/21593622_EA",
+        "packageSizing": "340 g, $8.79/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Cavatappi",
+        "link": "/en/cavatappi/p/20315613009_EA",
+        "packageSizing": "900 g, $0.25/100g",
+        "pricing": {
+          "displayPrice": "$2.29",
+          "price": "2.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Penne Rigate Pasta",
+        "link": "/en/penne-rigate-pasta/p/20315613006_EA",
+        "packageSizing": "900 g, $0.25/100g",
+        "pricing": {
+          "displayPrice": "$2.29",
+          "price": "2.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Rotini Pasta",
+        "link": "/en/rotini-pasta/p/21404963_EA",
+        "packageSizing": "410 g, $0.73/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Conchiglie Pasta",
+        "link": "/en/conchiglie-pasta/p/21404961_EA",
+        "packageSizing": "410 g, $0.73/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Elbow Macaroni",
+        "link": "/en/elbow-macaroni/p/20315613003_EA",
+        "packageSizing": "900 g, $0.25/100g",
+        "pricing": {
+          "displayPrice": "$2.29",
+          "price": "2.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Spaghetti",
+        "link": "/en/spaghetti/p/20315613002_EA",
+        "packageSizing": "900 g, $0.25/100g",
+        "pricing": {
+          "displayPrice": "$2.29",
+          "price": "2.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Penne Rigate Pasta",
+        "link": "/en/penne-rigate-pasta/p/21550231_EA",
+        "packageSizing": "410 g, $0.73/100g",
+        "pricing": {
+          "displayPrice": "$2.99",
+          "price": "2.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$2.50 MIN 2"
+        }
+      },
+      {
+        "title": "Dairy Free Mozzarella Cheese Shreds",
+        "link": "/en/dairy-free-mozzarella-cheese-shreds/p/21591969_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ],
+    "bread": [
+      {
+        "title": "Sourdough Bistro",
+        "link": "/en/sourdough-bistro/p/21616156_EA",
+        "packageSizing": "595 g, $0.92/100g",
+        "pricing": {
+          "displayPrice": "$5.50",
+          "price": "5.50",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "14 Grain Bread",
+        "link": "/en/14-grain-bread/p/21178642_EA",
+        "packageSizing": "600 g, $0.75/100g",
+        "pricing": {
+          "displayPrice": "$4.49",
+          "price": "4.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Original Cheese Snacks 6P",
+        "link": "/en/original-cheese-snacks-6p/p/20574332_EA",
+        "packageSizing": "120 g, $4.17/100g",
+        "pricing": {
+          "displayPrice": "$5.00",
+          "price": "5.00",
+          "wasPrice": "$6.49"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $1.49"
+        }
+      },
+      {
+        "title": "Classic White Bistro",
+        "link": "/en/classic-white-bistro/p/21616092_EA",
+        "packageSizing": "595 g, $0.92/100g",
+        "pricing": {
+          "displayPrice": "$5.50",
+          "price": "5.50",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Whole Grain & Protein Blend Bread",
+        "link": "/en/whole-grain-protein-blend-bread/p/21429067_EA",
+        "packageSizing": "600 g, $0.75/100g",
+        "pricing": {
+          "displayPrice": "$4.49",
+          "price": "4.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Rosemary Focaccia",
+        "link": "/en/rosemary-focaccia/p/21596086_EA",
+        "packageSizing": "560 g, $1.07/100g",
+        "pricing": {
+          "displayPrice": "$6.00",
+          "price": "6.00",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Thick Slice Original White Bread",
+        "link": "/en/thick-slice-original-white-bread/p/20038335_EA",
+        "packageSizing": "675 g, $0.64/100g",
+        "pricing": {
+          "displayPrice": "$4.29",
+          "price": "4.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Sliced Sourdough Miche Loaf",
+        "link": "/en/sliced-sourdough-miche-loaf/p/21624691_EA",
+        "packageSizing": "700 g, $0.93/100g",
+        "pricing": {
+          "displayPrice": "$6.50",
+          "price": "6.50",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "14 Grains & Protein Sliced Bread",
+        "link": "/en/14-grains-protein-sliced-bread/p/21693323_EA",
+        "packageSizing": "600 g, $0.75/100g",
+        "pricing": {
+          "displayPrice": "$4.49",
+          "price": "4.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Chef's Signature with 8% Clarified Butter, Salted",
+        "link": "/en/chef-s-signature-with-8-clarified-butter-salted/p/21747634_EA",
+        "packageSizing": "454 g, $1.54/100g",
+        "pricing": {
+          "displayPrice": "$6.99",
+          "price": "6.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Thick Slice 100% Whole Wheat Bread",
+        "link": "/en/thick-slice-100-whole-wheat-bread/p/20322326_EA",
+        "packageSizing": "675 g, $0.64/100g",
+        "pricing": {
+          "displayPrice": "$4.29",
+          "price": "4.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Salted Plant Butter Sticks",
+        "link": "/en/salted-plant-butter-sticks/p/21088919_EA",
+        "packageSizing": "454 g, $1.21/100g",
+        "pricing": {
+          "displayPrice": "$5.49",
+          "price": "5.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ],
+    "cheese": [
+      {
+        "title": "Dairy Free Cheddar Cheese Slices",
+        "link": "/en/dairy-free-cheddar-cheese-slices/p/21339330_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Marble Farmer's Cheese",
+        "link": "/en/marble-farmer-s-cheese/p/20975773_EA",
+        "packageSizing": "700 g, $1.57/100g",
+        "pricing": {
+          "displayPrice": "$10.99",
+          "price": "10.99",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Dairy Free Feta Cheese",
+        "link": "/en/dairy-free-feta-cheese/p/21426396_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Dairy Free Mature Cheddar Cheese Slices",
+        "link": "/en/dairy-free-mature-cheddar-cheese-slices/p/21339319_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Triple Cheddar Shredded Cheese Blend",
+        "link": "/en/triple-cheddar-shredded-cheese-blend/p/21060183_EA",
+        "packageSizing": "320 g, $2.12/100g",
+        "pricing": {
+          "displayPrice": "$6.79",
+          "price": "6.79",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Dairy Free Smoked Provolone Slices",
+        "link": "/en/dairy-free-smoked-provolone-slices/p/21339317_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Marble Cheddar Cheese Bar",
+        "link": "/en/marble-cheddar-cheese-bar/p/21279221_EA",
+        "packageSizing": "400 g, $1.87/100g",
+        "pricing": {
+          "displayPrice": "$7.49",
+          "price": "7.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Dairy Free Mozzarella Cheese Shreds",
+        "link": "/en/dairy-free-mozzarella-cheese-shreds/p/21591969_EA",
+        "packageSizing": "200 g, $3.25/100g",
+        "pricing": {
+          "displayPrice": "$6.49",
+          "price": "6.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Marble Farmer's Cheese",
+        "link": "/en/marble-farmer-s-cheese/p/21289745_EA",
+        "packageSizing": "400 g, $1.70/100g",
+        "pricing": {
+          "displayPrice": "$6.79",
+          "price": "6.79",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "MULTI",
+          "type": "MULTI",
+          "text": "$6.00 MIN 2"
+        }
+      },
+      {
+        "title": "Gouda Taste Cheese Snacks 6P",
+        "link": "/en/gouda-taste-cheese-snacks-6p/p/21542431_EA",
+        "packageSizing": "120 g, $4.17/100g",
+        "pricing": {
+          "displayPrice": "$5.00",
+          "price": "5.00",
+          "wasPrice": "$6.49"
+        },
+        "uom": "EA",
+        "deal": {
+          "name": "SALE",
+          "type": "SALE",
+          "text": "SAVE $1.49"
+        }
+      },
+      {
+        "title": "Old Cheddar Cheese Bar",
+        "link": "/en/old-cheddar-cheese-bar/p/21208649_EA",
+        "packageSizing": "400 g, $1.87/100g",
+        "pricing": {
+          "displayPrice": "$7.49",
+          "price": "7.49",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      },
+      {
+        "title": "Fresh Mozzarella Slice Ball",
+        "link": "/en/fresh-mozzarella-slice-ball/p/21547229_EA",
+        "packageSizing": "227 g, $3.65/100g",
+        "pricing": {
+          "displayPrice": "$8.29",
+          "price": "8.29",
+          "wasPrice": null
+        },
+        "uom": "EA",
+        "deal": null
+      }
+    ]
+  }
+}

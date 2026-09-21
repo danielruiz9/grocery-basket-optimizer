@@ -181,6 +181,32 @@ class TestRealPriceOptimizer(unittest.TestCase):
             misses["best_single"],
         )
 
+    def test_threshold_comparison_uses_displayed_cents(self):
+        basket = [_request("fresh_apples"), _request("sliced_bread")]
+        for pair_total, threshold, expected in (
+            (29.46, 2.19, True),
+            (29.46, 2.20, False),
+            (27.55, 4.10, True),
+            (27.55, 4.11, False),
+            (27.55, 4.09, True),
+            (29.466, 2.19, False),  # Savings display as $2.18.
+            (31.649, 0.00, False),  # No positive savings at cent precision.
+        ):
+            with self.subTest(pair_total=pair_total, threshold=threshold):
+                prices = pd.DataFrame([
+                    _fixed_price_row("Store A", "fresh_apples", 30.65),
+                    _fixed_price_row("Store A", "sliced_bread", 1.00),
+                    _fixed_price_row("Store B", "fresh_apples", pair_total - 1),
+                ])
+                result = optimize_real_price_basket(
+                    basket, prices=prices, savings_threshold=threshold,
+                )
+                self.assertEqual(result["worth_it"], expected)
+                self.assertEqual(
+                    result["recommended_option"],
+                    result["best_pair"] if expected else result["best_single"],
+                )
+
     def test_equal_cost_two_store_plan_is_not_recommended(self):
         prices = pd.DataFrame(
             [

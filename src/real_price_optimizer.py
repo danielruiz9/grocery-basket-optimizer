@@ -1,6 +1,7 @@
 """Optimize quantity-aware grocery baskets using normalized real-price data."""
 
 from collections.abc import Mapping
+from decimal import Decimal
 from itertools import combinations
 from pathlib import Path
 
@@ -440,7 +441,11 @@ def optimize_real_price_basket(
         }
 
     savings = best_single["total_cost"] - best_pair["total_cost"]
-    worth_it = savings > 0 and savings >= savings_threshold
+    # Compare the same cent amounts displayed by the app, without an epsilon
+    # that could qualify savings a full cent below the requested threshold.
+    monetary_savings = Decimal(f"{savings:.2f}")
+    monetary_threshold = Decimal(f"{savings_threshold:.2f}")
+    worth_it = monetary_savings > 0 and monetary_savings >= monetary_threshold
     recommended_option = best_pair if worth_it else best_single
     recommendation = (
         "Use two stores because the estimated dollar savings meet or "

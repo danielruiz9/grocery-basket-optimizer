@@ -133,7 +133,7 @@ def normalize_listing(listing):
         )
     if (
         normalized["comparison_group"] == "fresh_apples"
-        and normalized["product_form"] == "loose"
+        and normalized["product_form"] in {"loose", "packaged"}
         and listing.get("is_variable_weight") is False
         and listing.get("package_size") is not None
         and listing.get("package_unit") in {"lb", "lbs"}

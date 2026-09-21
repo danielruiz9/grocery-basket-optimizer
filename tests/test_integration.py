@@ -116,17 +116,36 @@ class TestCrossStoreIntegration(unittest.TestCase):
                 displayed_price_text="$0.68 avg. ea.",
             ),
         ])
-        result = integrate_price_frames([walmart, nofrills, foodbasics, metro])
+        loblaws_row = _row(
+            "Loblaws Canada", "https://example.test/loblaws/apples",
+            "Ambrosia Apples", "fresh_apples", price=0.52,
+            promotion_text="$8.00 MIN 2", multi_buy_quantity=2,
+            multi_buy_unit_price=8.00, single_item_price=9.50,
+        )
+        loblaws = pd.DataFrame([loblaws_row, {**loblaws_row, "search_term": "fruit"}])
+        sobeys = pd.DataFrame([
+            _row(
+                "Sobeys Canada", "https://example.test/sobeys/apples",
+                "Royal Gala Apples", "fresh_apples", price=0.42,
+                availability="in_stock", product_id="sobeys-apples",
+                store_context="Sobeys Test Store",
+            ),
+        ])
+        result = integrate_price_frames([
+            walmart, nofrills, foodbasics, metro, loblaws, sobeys,
+        ])
 
-        self.assertEqual(result.duplicates_removed, 1)
-        self.assertEqual(len(result.combined), 7)
-        self.assertEqual(len(result.optimizer_ready), 4)
+        self.assertEqual(result.duplicates_removed, 2)
+        self.assertEqual(len(result.combined), 9)
+        self.assertEqual(len(result.optimizer_ready), 6)
         self.assertEqual(
             result.optimizer_ready["store"].tolist(),
             [
                 "Food Basics Canada",
+                "Loblaws Canada",
                 "Metro Canada",
                 "No Frills Canada",
+                "Sobeys Canada",
                 "Walmart Canada",
             ],
         )
@@ -159,6 +178,18 @@ class TestCrossStoreIntegration(unittest.TestCase):
         self.assertEqual(metro_row["regular_price_unit"], "kg")
         self.assertEqual(metro_row["displayed_price_text"], "$0.68 avg. ea.")
         self.assertTrue(pd.isna(walmart_row["regular_price_unit"]))
+        loblaws_output = result.optimizer_ready.loc[
+            result.optimizer_ready["store"].eq("Loblaws Canada")
+        ].iloc[0]
+        self.assertEqual(loblaws_output["promotion_text"], "$8.00 MIN 2")
+        self.assertEqual(loblaws_output["single_item_price"], 9.50)
+        self.assertTrue(pd.isna(walmart_row["promotion_text"]))
+        sobeys_output = result.optimizer_ready.loc[
+            result.optimizer_ready["store"].eq("Sobeys Canada")
+        ].iloc[0]
+        self.assertEqual(sobeys_output["availability"], "in_stock")
+        self.assertEqual(sobeys_output["product_id"], "sobeys-apples")
+        self.assertEqual(sobeys_output["store_context"], "Sobeys Test Store")
 
         summary = summarize_integration(result)
         self.assertEqual(
@@ -190,6 +221,37 @@ class TestCrossStoreIntegration(unittest.TestCase):
         self.assertEqual(result.duplicates_removed, 0)
         self.assertEqual(len(result.combined), 2)
 
+    def test_preserves_out_of_stock_audit_rows_but_excludes_them_from_optimizer(self):
+        rows = pd.DataFrame(
+            [
+                _row(
+                    "Sobeys Canada",
+                    "https://example.test/sobeys/in-stock",
+                    "In-stock chicken breast",
+                    "chicken_breast_boneless",
+                    availability="in_stock",
+                ),
+                _row(
+                    "Sobeys Canada",
+                    "https://example.test/sobeys/out-of-stock",
+                    "Out-of-stock chicken breast",
+                    "chicken_breast_boneless",
+                    availability="out_of_stock",
+                ),
+            ]
+        )
+
+        result = integrate_price_frames([rows])
+
+        self.assertEqual(len(result.combined), 2)
+        self.assertEqual(result.combined["availability"].tolist(), [
+            "in_stock", "out_of_stock",
+        ])
+        self.assertEqual(
+            result.optimizer_ready["product_title"].tolist(),
+            ["In-stock chicken breast"],
+        )
+
     def test_raises_for_mixed_units_within_one_comparison_group(self):
         rows = pd.DataFrame(
             [
@@ -216,18 +278,22 @@ class TestCrossStoreIntegration(unittest.TestCase):
         ):
             integrate_price_frames([rows])
 
-    def test_default_inputs_include_all_four_stores(self):
+    def test_default_inputs_include_all_six_stores(self):
         self.assertEqual([path.name for path in DEFAULT_INPUT_PATHS], [
             "walmart_prices_normalized.csv", "nofrills_prices_normalized.csv",
             "foodbasics_prices_normalized.csv", "metro_prices_normalized.csv",
+            "loblaws_prices_normalized.csv",
+            "sobeys_prices_normalized.csv",
         ])
 
-    def test_loads_four_files_and_writes_both_outputs(self):
+    def test_loads_six_files_and_writes_both_outputs(self):
         stores = (
             "Walmart Canada",
             "No Frills Canada",
             "Food Basics Canada",
             "Metro Canada",
+            "Loblaws Canada",
+            "Sobeys Canada",
         )
 
         with tempfile.TemporaryDirectory() as temp_directory:
@@ -260,9 +326,9 @@ class TestCrossStoreIntegration(unittest.TestCase):
             audit = pd.read_csv(audit_path)
             optimizer = pd.read_csv(optimizer_path)
 
-        self.assertEqual(len(result.combined), 4)
-        self.assertEqual(len(audit), 4)
-        self.assertEqual(len(optimizer), 4)
+        self.assertEqual(len(result.combined), 6)
+        self.assertEqual(len(audit), 6)
+        self.assertEqual(len(optimizer), 6)
         self.assertEqual(list(audit.columns), list(SUPERSET_COLUMNS))
 
 

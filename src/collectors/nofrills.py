@@ -190,11 +190,11 @@ def _extract_unit_price(package_sizing):
     return unit_price_text, listed_unit_price, listed_unit
 
 
-def _canonical_product_url(href):
+def _canonical_product_url(href, base_url=NOFRILLS_BASE_URL):
     if not href:
         return None
 
-    absolute_url = urljoin(NOFRILLS_BASE_URL, href)
+    absolute_url = urljoin(base_url, href)
     parsed = urlsplit(absolute_url)
     return urlunsplit(
         (parsed.scheme, parsed.netloc, parsed.path, "", "")
@@ -232,7 +232,10 @@ def _sale_status(tile, regular_price):
     return None
 
 
-def parse_product_tiles(tiles, search_term, observed_date=None):
+def parse_product_tiles(
+    tiles, search_term, observed_date=None, *,
+    store="No Frills Canada", base_url=NOFRILLS_BASE_URL,
+):
     """Parse No Frills product-tile records into raw listings."""
     observed_date = observed_date or date.today().isoformat()
     listings = []
@@ -262,9 +265,9 @@ def parse_product_tiles(tiles, search_term, observed_date=None):
             {
                 "date_observed": str(observed_date),
                 "search_term": search_term,
-                "store": "No Frills Canada",
+                "store": store,
                 "product_title": tile.get("title"),
-                "product_url": _canonical_product_url(tile.get("link")),
+                "product_url": _canonical_product_url(tile.get("link"), base_url),
                 **package,
                 "displayed_price": displayed_price,
                 "unit_price_text": unit_price_text,

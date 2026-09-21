@@ -81,6 +81,18 @@ def normalize_listing(listing):
     normalized = dict(listing)
     classification = classify_product(listing.get("product_title"))
     normalized.update(classification)
+    # Fixed measured apple packages are not loose, per-weight purchases.
+    # Without an explicit bag label, use the less specific "packaged" form.
+    size = listing.get("package_size")
+    if (
+        normalized["comparison_group"] == "fresh_apples"
+        and normalized["product_form"] == "loose"
+        and listing.get("is_variable_weight") is False
+        and isinstance(size, (int, float))
+        and math.isfinite(size) and size > 0
+        and str(listing.get("package_unit", "")).lower() in {"g", "kg", "lb", "lbs"}
+    ):
+        normalized["product_form"] = "packaged"
     normalized["standardized_unit"] = _standardized_unit(listing)
     normalized["price_per_standard_unit"] = None
     normalized["normalization_error"] = None

@@ -12,6 +12,8 @@ NORMALIZED_PATHS = (
     PROJECT_ROOT / "data" / "nofrills_prices_normalized.csv",
     PROJECT_ROOT / "data" / "foodbasics_prices_normalized.csv",
     PROJECT_ROOT / "data" / "metro_prices_normalized.csv",
+    PROJECT_ROOT / "data" / "loblaws_prices_normalized.csv",
+    PROJECT_ROOT / "data" / "sobeys_prices_normalized.csv",
     PROJECT_ROOT / "data" / "all_stores_prices_normalized.csv",
     PROJECT_ROOT / "data" / "optimizer_ready_prices.csv",
 )

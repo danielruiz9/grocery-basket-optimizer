@@ -5,6 +5,25 @@ from src.classification import classify_product, normalize_product_name
 
 class TestProductClassification(unittest.TestCase):
 
+    def test_loblaws_flavoured_snacks_are_not_fresh_fruit_or_cheese(self):
+        for title in (
+            "Gerber Puffs, Strawberry & Apple Flavour, Baby Snack",
+            "Gerber Lil’ Crunchies Apple Sweet Potato Flavour",
+            "Gerber Lil’ Crunchies Mild Cheddar Flavour Toddler Snacks, 12 Months & Up",
+            "Apple Flavoured Cream Cheese", "Frozen Apple Blend",
+            "Apple Puree", "Cheddar Flavour Snacks",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+        for title, group in (
+            ("Gala Apples, 4 lb bag", "fresh_apples"),
+            ("Royal Gala Apples", "fresh_apples"),
+            ("Original Cheese Snacks 6P", "cheese_unspecified_type"),
+            ("Gouda Taste Cheese Snacks 6P", "cheese_unspecified_type"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
+
     def test_prepared_chicken_does_not_compete_with_raw_chicken(self):
         for title in (
             "Oven Roasted Chicken Breast Strips",
@@ -22,7 +41,25 @@ class TestProductClassification(unittest.TestCase):
             "Chicken Breast Soup",
         ):
             with self.subTest(title=title):
-                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+                self.assertEqual(
+                    classify_product(title)["comparison_group"],
+                    "unsupported",
+                )
+
+    def test_seasoned_chicken_does_not_compete_with_plain_chicken(self):
+        titles = [
+            "Honey Garlic Boneless Chicken Breast",
+            "Chicken Breast Halves Montreal BBQ",
+            "Pinehill Frozen Chicken Breast Seasoned 2 kg",
+            "Mumbai Chicken Breast Boneless Skinless",
+            "Chicken Breast Stir-Fry Boneless Skinless",
+        ]
+
+        for title in titles:
+            self.assertEqual(
+                classify_product(title)["comparison_group"],
+                "unsupported",
+            )
 
     def test_raw_chicken_forms_are_preserved(self):
         for title, group in (
@@ -55,6 +92,7 @@ class TestProductClassification(unittest.TestCase):
             ("Thai Banana", "fresh_bananas"),
             ("Green banana", "fresh_bananas"),
             ("Green Cooking Bananas", "cooking_bananas"),
+            ("Baking Bananas", "cooking_bananas"),
             ("Plantains, Single", "fresh_plantains"),
             ("Plantain Cooking Bananas", "fresh_plantains"),
         ):
@@ -64,7 +102,8 @@ class TestProductClassification(unittest.TestCase):
     def test_pasta_bread_and_cheese_search_noise_is_unsupported(self):
         for title in (
             "Pasta Sauce", "Pasta Salad", "Prepared Penne Meal",
-            "Cooked Spaghetti", "White Cheddar Macaroni and Cheese",
+            "Cooked Spaghetti", "Konjac Spaghetti",
+            "White Cheddar Macaroni and Cheese",
             "Naan Bread", "Pita Bread", "Bread Pudding", "Bagel Chips",
             "Frozen Garlic Cheese Bread",
             "Cheddar Cheese Crackers", "Cheese Sauce", "Cheese Pizza",
@@ -82,6 +121,8 @@ class TestProductClassification(unittest.TestCase):
             ("Pizza Mozzarella Cheese", "mozzarella_cheese"),
             ("Shredded Double Cheddar Cheese Blend", "cheddar_cheese"),
             ("Cheddar-Style Processed Cheese Slices", "processed_cheese"),
+            ("Thin Sliced Process Cheese Mozzarella", "processed_cheese"),
+            ("Cracker Barrel Shredded Old Cheddar", "cheddar_cheese"),
             ("Nibblers Original Natural Cheese Snacks", "cheese_unspecified_type"),
         ):
             with self.subTest(title=title):
@@ -201,6 +242,13 @@ class TestProductClassification(unittest.TestCase):
         )
         self.assertEqual(result["product_form"], "liquid")
 
+    def test_pickled_eggs_are_not_treated_as_shell_eggs(self):
+        result = classify_product(
+            "Pickled Eggs Seasoned Vinegar Dill Pickled 500 ml"
+        )
+
+        self.assertEqual(result["comparison_group"], "unsupported")
+
     def test_preserves_apple_varieties_as_broad_substitutes(self):
         gala = classify_product("Organic Gala Apples 3 lb Bag")
         granny_smith = classify_product("Granny Smith Apples")
@@ -234,6 +282,7 @@ class TestProductClassification(unittest.TestCase):
             "Golden Saba Steamed Banana",
             "Pink Guava, Mango, and Banana Fruit Blend",
             "Pineapple, Banana, and Mango Fruit Blend",
+            "Banana Drink Mix",
         )
 
         for title in processed_titles:
@@ -355,13 +404,32 @@ class TestProductClassification(unittest.TestCase):
 
     def test_preserves_cheese_type_across_product_forms(self):
         block = classify_product("Old Cheddar Cheese Block")
-        shredded = classify_product("Dairy-Free Cheddar Style Shreds")
+        shredded = classify_product("Cheddar Cheese Shreds")
 
         self.assertEqual(block["comparison_group"], "cheddar_cheese")
         self.assertEqual(shredded["comparison_group"], "cheddar_cheese")
         self.assertEqual(block["product_form"], "block")
         self.assertEqual(shredded["product_form"], "shredded")
-        self.assertEqual(shredded["attributes"], ["dairy_free"])
+        self.assertEqual(shredded["attributes"], [])
+
+    def test_dairy_alternatives_do_not_compete_with_dairy_cheese(self):
+        for title in (
+            "Dairy-Free Cheddar Style Shreds", "Dairy Free Feta Cheese",
+            "Dairy Free Mozzarella Cheese Shreds", "Non-Dairy Cheddar Slices",
+            "Vegan Cheddar Cheese", "Plant-Based Mozzarella Cheese",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+        alternative = classify_product("Dairy-Free Cheddar Style Shreds")
+        self.assertEqual(alternative["product_form"], "shredded")
+        self.assertEqual(alternative["attributes"], ["dairy_free"])
+        for title, group in (
+            ("Lactose Free Cheddar Cheese", "cheddar_cheese"),
+            ("Old Cheddar Cheese Bar", "cheddar_cheese"),
+            ("Fresh Mozzarella Slice Ball", "mozzarella_cheese"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
 
     def test_classifies_cheese_bar_as_block(self):
         result = classify_product(
@@ -384,6 +452,22 @@ class TestProductClassification(unittest.TestCase):
 
         self.assertEqual(result["comparison_group"], "processed_cheese")
         self.assertEqual(result["product_form"], "sliced")
+
+    def test_cheese_spreads_are_processed_but_cream_cheese_stays_separate(self):
+        self.assertEqual(
+            classify_product("The Laughing Cow Cheese Original 400 g")[
+                "comparison_group"
+            ],
+            "processed_cheese",
+        )
+        self.assertEqual(
+            classify_product("Cheese Spread 250 g")["comparison_group"],
+            "processed_cheese",
+        )
+        self.assertEqual(
+            classify_product("Cream Cheese Spread 250 g")["comparison_group"],
+            "cream_cheese",
+        )
 
     def test_returns_explicit_unknown_for_unsupported_product(self):
         result = classify_product("Frozen Pepperoni Pizza")

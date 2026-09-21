@@ -37,8 +37,10 @@ GROUP_LABELS = {
 
 STORE_LABELS = {
     "Food Basics Canada": "Food Basics",
+    "Loblaws Canada": "Loblaws",
     "Metro Canada": "Metro",
     "No Frills Canada": "No Frills",
+    "Sobeys Canada": "Sobeys",
     "Walmart Canada": "Walmart",
 }
 
@@ -317,7 +319,7 @@ st.title("🛒 Grocery Basket Optimizer")
 
 st.write(
     "Build a grocery basket and compare estimated checkout costs across "
-    "Walmart, No Frills, Food Basics, and Metro."
+    "Walmart, No Frills, Food Basics, Metro, Loblaws, and Sobeys."
 )
 
 if pd.notna(latest_date):

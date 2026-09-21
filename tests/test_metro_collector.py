@@ -211,8 +211,9 @@ def test_schema_round_trip_and_existing_integration_rules(listings, tmp_path):
     path = save_listings(normalize_listings(listings), tmp_path / "metro.csv")
     frame = pd.read_csv(path)
     assert tuple(frame.columns) == METRO_OUTPUT_COLUMNS
-    assert set(SUPERSET_COLUMNS) <= set(frame.columns)
     result = integrate_price_frames([frame])
+    assert set(SUPERSET_COLUMNS) <= set(result.combined.columns)
+    assert result.combined[["availability", "product_id", "store_context"]].isna().all().all()
     assert len(result.combined) == 12
     assert "unsupported" not in set(result.optimizer_ready.comparison_group)
     assert result.optimizer_ready.normalization_error.isna().all()

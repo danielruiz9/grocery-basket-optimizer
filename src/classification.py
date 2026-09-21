@@ -124,13 +124,21 @@ def _classify_chicken_breast(normalized_name, tokens):
     if "chicken" not in tokens or not {"breast", "breasts"} & tokens:
         return None
 
-    # Preparation/deli descriptions must not compete with raw meat. A
-    # "roast" can be ambiguous, so leave it unsupported rather than guess.
+    # Preparation/deli and seasoned descriptions must not compete with plain
+    # raw meat. A "roast" or regional flavour name can be ambiguous, so leave
+    # it unsupported rather than guess.
     if {
         "cooked", "coocked", "roast", "roasted", "rotisserie", "grilled",
         "smoked", "prepared", "stuffed", "souvlaki", "sandwich", "salad",
-        "soup", "sauce", "meal", "meals",
-    } & tokens or PASTA_TERMS & tokens or "ready to eat" in normalized_name:
+        "soup", "sauce", "meal", "meals", "seasoned", "flavoured",
+        "flavored", "marinated", "bbq", "barbecue",
+    } & tokens or PASTA_TERMS & tokens or any(
+        phrase in normalized_name
+        for phrase in (
+            "ready to eat", "honey garlic", "montreal bbq", "stir fry",
+            "mumbai",
+        )
+    ):
         return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
@@ -243,7 +251,10 @@ def _classify_pasta(normalized_name, tokens):
         return None
 
     if (
-        {"sauce", "soup", "salad", "meal", "meals", "cooked", "prepared"} & tokens
+        {
+            "sauce", "soup", "salad", "meal", "meals", "cooked",
+            "prepared", "konjac",
+        } & tokens
         or "ready to eat" in normalized_name
         or "macaroni and cheese" in normalized_name
         or "macaroni cheese" in normalized_name
@@ -273,7 +284,7 @@ def _classify_eggs(normalized_name, tokens):
     if not {"egg", "eggs"} & tokens:
         return None
 
-    if {"boiled", "peeled", "quail"} & tokens:
+    if {"boiled", "peeled", "pickled", "quail"} & tokens:
         return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
@@ -311,6 +322,7 @@ def _classify_produce(normalized_name, tokens):
     if {"apple", "apples"} & tokens:
         excluded_forms = {
             "cereal",
+            "cereals",
             "cider",
             "cookie",
             "cookies",
@@ -318,10 +330,15 @@ def _classify_produce(normalized_name, tokens):
             "juice",
             "pie",
             "sauce",
+            "flavor", "flavour", "flavored", "flavoured",
+            "puff", "puffs", "crunchies", "snack", "snacks",
+            "frozen", "iqf", "puree", "smoothie", "blend",
+            "dessert", "desserts", "yogurt", "yoghurt",
+            "drink", "drinks", "mix", "mixes",
         }
 
         if excluded_forms & tokens:
-            return None
+            return _unknown_classification()
 
         product_form = "bagged" if {"bag", "bagged"} & tokens else "loose"
         return _classification(
@@ -344,6 +361,8 @@ def _classify_produce(normalized_name, tokens):
             "dried",
             "dessert",
             "desserts",
+            "drink",
+            "drinks",
             "custard",
             "pudding",
             "milkshake",
@@ -358,11 +377,14 @@ def _classify_produce(normalized_name, tokens):
             "leaf",
             "muffin",
             "muffins",
+            "mix",
+            "mixes",
             "puff",
             "puffs",
             "puree",
             "slice",
             "sliced",
+            "smooth",
             "smoothie",
             "steamed",
             "yogurt",
@@ -378,7 +400,9 @@ def _classify_produce(normalized_name, tokens):
                 "produce", "plantains", "fresh_plantains", product_form, attributes
             )
         comparison_group = (
-            "cooking_bananas" if "cooking" in tokens else "fresh_bananas"
+            "cooking_bananas"
+            if {"baking", "cooking"} & tokens
+            else "fresh_bananas"
         )
         return _classification(
             "produce", "bananas", comparison_group, product_form, attributes
@@ -396,19 +420,32 @@ def _classify_cheese(normalized_name, tokens):
         return None
 
     if {
-        "cracker", "crackers", "chips", "crisps", "puffs", "sauce",
+        "chips", "crisps", "puffs", "sauce",
         "soup", "dip", "sandwich", "sandwiches", "dessert", "desserts",
-    } & tokens or "cheese pizza" in normalized_name:
+        "crunchies", "baby", "toddler",
+    } & tokens or (
+        {"cracker", "crackers"} & tokens and "barrel" not in tokens
+    ) or "cheese pizza" in normalized_name:
+        return _unknown_classification()
+
+    if (
+        {"flavor", "flavour", "flavored", "flavoured"} & tokens
+        and {"snack", "snacks"} & tokens
+    ):
         return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
 
-    if "processed" in tokens:
-        comparison_group = "processed_cheese"
-    elif "cream cheese" in normalized_name:
+    if "cream cheese" in normalized_name:
         comparison_group = "cream_cheese"
     elif "cottage cheese" in normalized_name:
         comparison_group = "cottage_cheese"
+    elif (
+        {"process", "processed"} & tokens
+        or "laughing cow" in normalized_name
+        or "cheese spread" in normalized_name
+    ):
+        comparison_group = "processed_cheese"
     elif "cheddar" in tokens:
         comparison_group = "cheddar_cheese"
     elif "mozzarella" in tokens:
@@ -434,6 +471,19 @@ def _classify_cheese(normalized_name, tokens):
         product_form = "string"
     else:
         product_form = "unspecified"
+
+    # A dairy alternative is not an automatic substitute for dairy cheese.
+    # Keep its form/attributes for audit, but do not invent a supported group.
+    if (
+        "dairy_free" in attributes
+        or "vegan" in tokens
+        or "plant based" in normalized_name
+    ):
+        return {
+            **_unknown_classification(),
+            "product_form": product_form,
+            "attributes": attributes,
+        }
 
     return _classification(
         "dairy", "cheese", comparison_group, product_form, attributes

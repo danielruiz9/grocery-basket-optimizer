@@ -1,4 +1,4 @@
-"""Offline end-to-end checks for the integrated four-store snapshot."""
+"""Offline four-store baseline checks, excluding subsequently added stores."""
 
 from pathlib import Path
 
@@ -10,9 +10,12 @@ from src.real_price_optimizer import optimize_real_price_basket
 
 @pytest.fixture
 def prices():
-    return pd.read_csv(
+    frame = pd.read_csv(
         Path(__file__).resolve().parents[1] / "data" / "optimizer_ready_prices.csv"
     )
+    return frame.loc[frame["store"].isin({
+        "Walmart Canada", "No Frills Canada", "Food Basics Canada", "Metro Canada",
+    })]
 
 
 def request(group, quantity, unit):

@@ -12,6 +12,8 @@ DEFAULT_INPUT_PATHS = (
     PROJECT_ROOT / "data" / "nofrills_prices_normalized.csv",
     PROJECT_ROOT / "data" / "foodbasics_prices_normalized.csv",
     PROJECT_ROOT / "data" / "metro_prices_normalized.csv",
+    PROJECT_ROOT / "data" / "loblaws_prices_normalized.csv",
+    PROJECT_ROOT / "data" / "sobeys_prices_normalized.csv",
 )
 DEFAULT_AUDIT_OUTPUT_PATH = (
     PROJECT_ROOT / "data" / "all_stores_prices_normalized.csv"
@@ -49,6 +51,9 @@ SUPERSET_COLUMNS = (
     "price_per_standard_unit",
     "data_quality_warning",
     "normalization_error",
+    "availability",
+    "product_id",
+    "store_context",
 )
 DEDUPLICATION_COLUMNS = (
     "store",
@@ -192,10 +197,26 @@ def build_optimizer_ready(combined):
         .str.strip()
         .eq("")
     )
+    availability_eligible = pd.Series(True, index=combined.index)
+    if "availability" in combined.columns:
+        availability = (
+            combined["availability"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.lower()
+            .str.replace("-", "_", regex=False)
+            .str.replace(" ", "_", regex=False)
+        )
+        availability_eligible = ~availability.isin(
+            {"out_of_stock", "unavailable"}
+        )
+
     optimizer_ready = combined.loc[
         combined["comparison_group"].ne("unsupported")
         & empty_error
         & combined["price_per_standard_unit"].notna()
+        & availability_eligible
     ].copy()
 
     validate_comparison_group_units(optimizer_ready)
