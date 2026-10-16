@@ -1,0 +1,128 @@
+{
+  "capture_version": 1,
+  "captured_at": "2026-10-16T03:23:45.728Z",
+  "final_url": "https://www.walmart.ca/en/ip/Great-Value-Large-12-Eggs/10052944",
+  "next_data": {
+    "props": {
+      "pageProps": {
+        "initialData": {
+          "data": {
+            "idml": {
+              "specifications": [
+                {
+                  "name": "Egg Type",
+                  "value": "Chicken Eggs"
+                },
+                {
+                  "name": "Colour",
+                  "value": "Other"
+                },
+                {
+                  "name": "Food Condition",
+                  "value": "Refrigerated"
+                },
+                {
+                  "name": "Container Type",
+                  "value": "Carton"
+                },
+                {
+                  "name": "Ingredients",
+                  "value": "Egg"
+                },
+                {
+                  "name": "SKU",
+                  "value": "10052944"
+                },
+                {
+                  "name": "Universal Product Code (UPC check)",
+                  "value": "681131911955"
+                },
+                {
+                  "name": "Walmart Item #",
+                  "value": "30221668"
+                }
+              ]
+            },
+            "product": {
+              "availabilityStatus": "IN_STOCK",
+              "canonicalUrl": "/en/ip/Great-Value-Large-12-Eggs/10052944",
+              "fulfillmentSummary": [
+                {
+                  "fulfillment": "DELIVERY",
+                  "storeId": "1004"
+                },
+                {
+                  "fulfillment": "PICKUP",
+                  "storeId": "1004"
+                }
+              ],
+              "name": "Great Value Large 12 Eggs",
+              "offerType": "1P",
+              "priceInfo": {
+                "additionalFees": {
+                  "countryName": null,
+                  "dutyFee": "[MaxDepth]",
+                  "estimatedTotalPrice": "[MaxDepth]",
+                  "giftCardMarginAndFee": null,
+                  "shippingAndImportFee": "[MaxDepth]"
+                },
+                "basePrice": null,
+                "capType": null,
+                "comparisonPrice": null,
+                "currentPrice": {
+                  "bestValue": null,
+                  "currencyUnit": "CAD",
+                  "price": 3.93,
+                  "priceDisplay": "$3.93",
+                  "priceString": "$3.93",
+                  "supportText": null,
+                  "variantPriceString": "$3.93"
+                },
+                "dropPrice": false,
+                "isPriceReduced": false,
+                "listPrice": null,
+                "priceDisplayCodes": {
+                  "clearance": null,
+                  "eligibleForAssociateDiscount": true,
+                  "finalCostByWeight": null,
+                  "isB2BPrice": false,
+                  "priceComparedToNew": false,
+                  "priceDisplayCondition": null,
+                  "priceDisplayType": "UNKNOWN",
+                  "pricePerUnitUom": "EA",
+                  "reducedPrice": null,
+                  "rollback": null,
+                  "submapType": null
+                },
+                "priceRange": {
+                  "currencyUnit": null,
+                  "denominations": null,
+                  "maxPrice": null,
+                  "minPrice": null,
+                  "priceString": null
+                },
+                "priceReducedDisplay": null,
+                "savings": null,
+                "savingsAmount": null,
+                "secondaryOfferBoost": null,
+                "shipPrice": null,
+                "subscriptionPrice": null,
+                "taxInfo": null,
+                "unitPrice": null,
+                "volumePriceTiers": [],
+                "wPlusEarlyAccessPrice": null,
+                "walmartFundedAmount": null,
+                "wasPrice": null
+              },
+              "sellerDisplayName": "Walmart",
+              "sellerId": "0",
+              "sellerType": "INTERNAL",
+              "usItemId": "10052944"
+            }
+          }
+        }
+      }
+    }
+  },
+  "store_label": "TORONTO STOCKYARDS, change store"
+}
