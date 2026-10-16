@@ -469,6 +469,33 @@ class TestProductClassification(unittest.TestCase):
             "cream_cheese",
         )
 
+    def test_rejects_apple_ingredient_and_abbreviated_mac_cheese_names(self):
+        for title in (
+            "Apple & Maple Spreadable Cheese",
+            "Apple and Maple Cheese Spread",
+            "Apple Cinnamon Spreadable Cheese",
+            "Protein+ Fibre Mac & Cheese",
+            "Protein Mac and Cheese",
+            "Classic Mac 'n' Cheese",
+            "MAC-CHEESE Dinner",
+            "Macaroni & Cheese",
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], "unsupported")
+
+    def test_cleanup_preserves_fresh_apples_cheddar_and_dry_pasta(self):
+        for title, group in (
+            ("Fresh Gala Apples", "fresh_apples"),
+            ("Honeycrisp Apples, 4 lb Bag", "fresh_apples"),
+            ("Old Cheddar Cheese Block", "cheddar_cheese"),
+            ("MacLaren's Cheddar Cheese", "cheddar_cheese"),
+            ("Elbow Macaroni", "dry_pasta"),
+            ("Protein+ Fibre Rotini Pasta", "dry_pasta"),
+            ("Cavatappi", "dry_pasta"),
+        ):
+            with self.subTest(title=title):
+                self.assertEqual(classify_product(title)["comparison_group"], group)
+
     def test_returns_explicit_unknown_for_unsupported_product(self):
         result = classify_product("Frozen Pepperoni Pizza")
 

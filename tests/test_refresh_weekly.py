@@ -332,7 +332,7 @@ def save_capture(root, key, observed_date=str(CYCLE)):
             shutil.copyfile(FIXTURES / f"{key}_search_results.html", folder / (term.replace(" ", "_") + ".html"))
 
 
-@pytest.mark.parametrize("key", list(refresh.STORES)[1:])
+@pytest.mark.parametrize("key", [key for key in refresh.STORES if key not in refresh.MAINTENANCE])
 def test_capture_adapters_use_existing_offline_parsers(tmp_path, key):
     save_capture(tmp_path, key)
     rows = refresh.collect_store(key, tmp_path, CYCLE, prompt=False)
@@ -374,12 +374,17 @@ def test_end_to_end_existing_collectors_with_only_offline_inputs(project, monkey
     refresh.walmart.save_listings([walmart_row], project / "data" / refresh.STORE_FILES["walmart"])
     (captures / "walmart").mkdir()
     (captures / "walmart" / "10052944.json").write_text(json.dumps(capture))
+    nf = json.loads((FIXTURES / "nofrills_product_capture.json").read_text())
+    nf['captured_at'] = str(CYCLE) + 'T12:00:00Z'
+    refresh.nofrills.save_listings([row('nofrills', product_url=nf['final_url'])],
+                                  project / 'data' / refresh.STORE_FILES['nofrills'])
+    (captures / 'nofrills' / '20812144001_EA.json').write_text(json.dumps(nf))
     prompts = []
     def answer(prompt):
         prompts.append(prompt)
         return "GTA test store" if "Store name/location" in prompt else ""
     result = refresh.run_refresh(root=project, today=CYCLE, input_fn=answer)
-    assert sum("Reuse without redating" in prompt for prompt in prompts) == 35
+    assert sum("Reuse without redating" in prompt for prompt in prompts) == 28
     assert result["production_rebuilt"]
     assert all(metrics["optimizer_ready"] > 0 for metrics in result["stores"].values())
     assert result["stores"]["sobeys"]["availability"]["out_of_stock"] == 5
@@ -424,19 +429,20 @@ def test_walmart_delegates_to_product_maintenance(monkeypatch, tmp_path):
     assert calls == [([row()], tmp_path / "walmart", CYCLE, 3)]
 
 
-def test_failed_walmart_verification_preserves_snapshots_and_stages_review(project, monkeypatch):
+@pytest.mark.parametrize('key', ['walmart', 'nofrills'])
+def test_failed_maintenance_verification_preserves_snapshots_and_stages_review(project, monkeypatch, key):
     before = contents(project / "data")
     monkeypatch.setattr(refresh, "collect_store", lambda *a, **k: [
         row(date_observed=None, displayed_price=None, price_per_standard_unit=None,
             verification_status="failed", verification_error="Wrong store",
             normalization_error="Unverified: Wrong store")])
     with pytest.raises(ValueError, match="replacement refused"):
-        refresh.run_refresh(root=project, store="walmart", today=CYCLE)
+        refresh.run_refresh(root=project, store=key, today=CYCLE)
     for filename in refresh.SNAPSHOT_FILES:
         assert (project / "data" / filename).read_bytes() == before[Path(filename)]
     archive = project / "data/history" / str(CYCLE)
-    assert (archive / "walmart_staged_review.csv").is_file()
-    assert json.loads((archive / "walmart_verification.json").read_text())["failed"] == 1
+    assert (archive / f"{key}_staged_review.csv").is_file()
+    assert json.loads((archive / f"{key}_verification.json").read_text())["failed"] == 1
 
 
 def test_walmart_dry_run_valid_capture_read_only(project, capsys):
@@ -449,7 +455,7 @@ def test_walmart_dry_run_valid_capture_read_only(project, capsys):
     (folder / "10052944.json").write_text(json.dumps(capture))
     before = contents(project)
     refresh.run_refresh(root=project, store="walmart", dry=True, today=CYCLE)
-    assert "1/1 captures ready" in capsys.readouterr().out
+    assert "1/1 audit rows ready" in capsys.readouterr().out
     assert contents(project) == before
 
 
@@ -517,7 +523,7 @@ def guided_html(key):
     return (FIXTURES / f"{fixture_key}_search_results.html").read_text()
 
 
-@pytest.mark.parametrize("key", list(refresh.STORES)[1:])
+@pytest.mark.parametrize("key", [key for key in refresh.STORES if key not in refresh.MAINTENANCE])
 def test_guided_html_all_stores_create_metadata_and_validate_each_file(tmp_path, key, capsys):
     folder = tmp_path / key
     prompts, opened = [], []

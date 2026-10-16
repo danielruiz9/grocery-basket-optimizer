@@ -1,8 +1,10 @@
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from src.collectors.nofrills import (
     collect_nofrills_listings,
@@ -10,6 +12,7 @@ from src.collectors.nofrills import (
     normalize_listing,
     normalize_listings,
     parse_search_results,
+    parse_product_tiles,
     save_listings,
 )
 
@@ -19,6 +22,65 @@ FIXTURE_PATH = (
     / "fixtures"
     / "nofrills_search_results.html"
 )
+
+
+def search_tile(**updates):
+    return dict(productId="123_EA", title="Cheddar Cheese", packageSizing="175 g, $1.14/100g",
+                pricing={"price": "1.00", "wasPrice": None},
+                link="/en/cheddar/p/123_EA", **updates)
+
+
+@pytest.mark.parametrize("indicator,expected", [
+    (None, "unknown"), ({}, "unknown"),
+    ({"indicatorId": "OUT", "text": "Out of Stock"}, "out_of_stock"),
+    ({"indicatorId": "LOW", "text": "Low Stock"}, "low_in_stock"),
+    ({"indicatorId": "IN", "text": "In Stock"}, "in_stock"),
+    ({"indicatorId": "UNRECOGNIZED"}, "unknown"),
+    ({"indicatorId": "OUT", "text": "In Stock"}, "unknown"),
+])
+def test_search_availability_preserved_and_filtered(indicator, expected, tmp_path):
+    from src.integration import integrate_price_frames
+    rows = normalize_listings(parse_product_tiles([search_tile(inventoryIndicator=indicator)], "cheese"))
+    assert rows[0]["availability"] == expected
+    path = save_listings(rows, tmp_path / "prices.csv")
+    result = integrate_price_frames([pd.read_csv(path)])
+    assert len(result.combined) == 1
+    assert len(result.optimizer_ready) == (0 if expected == "out_of_stock" else 1)
+
+
+def test_limit_offer_retains_terms_but_is_not_comparable(tmp_path):
+    from src.integration import integrate_price_frames
+    deal = {"dealPrice": 1, "expiryDate": "2026-10-21T00:00:00Z", "name": "LIMIT",
+            "type": "LIMIT", "text": "Limit 6, after limit $2.00", "points": 0}
+    rows = normalize_listings(parse_product_tiles([search_tile(deal=deal)], "pasta"))
+    row = rows[0]
+    assert row["displayed_price"] == 1
+    assert row["purchase_limit"] == 6
+    assert row["after_limit_price"] == 2
+    assert row["single_item_price"] is None
+    assert row["sale_expiry"] == deal["expiryDate"]
+    assert json.loads(row["promotion_details"])["deal"] == deal
+    assert row["price_per_standard_unit"] is None
+    assert "Quantity-limited" in row["normalization_error"]
+    path = save_listings(rows, tmp_path / "prices.csv")
+    result = integrate_price_frames([pd.read_csv(path)])
+    assert len(result.combined) == 1 and result.optimizer_ready.empty
+
+
+def test_limit_without_details_fails_closed_and_regular_sale_still_works():
+    rows = normalize_listings(parse_product_tiles([
+        search_tile(deal={"type": "LIMIT"}),
+        {**search_tile(deal={"type": "SALE", "text": "SAVE $1"}), "productId": "124_EA"},
+    ], "cheese"))
+    assert rows[0]["normalization_error"]
+    assert rows[1]["normalization_error"] is None
+    assert rows[1]["price_per_standard_unit"] is not None
+
+
+def test_other_store_low_level_parser_unchanged():
+    row = parse_product_tiles([search_tile(deal={"type": "LIMIT"})], "cheese", store="Loblaws Canada")[0]
+    assert "conditional_offer_terms" not in row
+    assert "availability" not in row
 
 
 class TestNoFrillsCollector(unittest.TestCase):

@@ -182,19 +182,21 @@ def parse_product_capture(capture, previous, cycle, freshness_window=3):
     return row
 
 
-def refresh_rows(previous_rows, folder, cycle, freshness_window=3):
+def refresh_rows(previous_rows, folder, cycle, freshness_window=3, *, adapter=None):
     """Keep one staged audit row per input, including explicit failed rows."""
     rows = []
+    identify = adapter.product_id if adapter else product_id
+    parse = adapter.parse_product_capture if adapter else parse_product_capture
     for previous in previous_rows:
         try:
-            path = Path(folder) / f"{product_id(previous['product_url'])}.json"
+            path = Path(folder) / f"{identify(previous['product_url'])}.json"
             if not path.is_file():
                 raise VerificationError("Browser capture not ready.")
             capture = json.loads(path.read_text(encoding="utf-8"))
-            row = parse_product_capture(capture, previous, cycle, freshness_window)
+            row = parse(capture, previous, cycle, freshness_window)
         except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
             # Do NOT relabel last-known data as current. History holds old prices.
-            row = {"store": "Walmart Canada", "product_url": previous.get("product_url"),
+            row = {"store": adapter.STORE if adapter else "Walmart Canada", "product_url": previous.get("product_url"),
                    "product_title": previous.get("product_title"), "search_term": previous.get("search_term"),
                    "date_observed": None, "verification_status": "failed",
                    "verification_error": str(exc), "normalization_error": f"Unverified: {exc}",
@@ -250,14 +252,16 @@ def guide_captures(previous_rows, folder, cycle, *, freshness_window=3, input_fn
                 (opener or webbrowser.open_new_tab)(old["product_url"])
 
 
-def stage_refresh(snapshot, captures, stage, cycle, freshness_window=3):
+def stage_refresh(snapshot, captures, stage, cycle, freshness_window=3, *, adapter=None):
     """Persistent review-only staging. Never replaces any production file."""
     from refresh_weekly import detect_changes
     previous = pd.read_csv(snapshot)
-    rows = refresh_rows(previous.astype(object).where(pd.notna(previous), None).to_dict("records"), captures, cycle, freshness_window)
+    rows = refresh_rows(previous.astype(object).where(pd.notna(previous), None).to_dict("records"), captures, cycle, freshness_window, adapter=adapter)
     stage = Path(stage)
     stage.mkdir(parents=True, exist_ok=False)
-    path = save_listings(rows, stage / "walmart_prices_normalized.csv")
+    key = adapter.STORE_KEY if adapter else "walmart"
+    saver = adapter.save_listings if adapter else save_listings
+    path = saver(rows, stage / f"{key}_prices_normalized.csv")
     verified = pd.read_csv(path).query("verification_status == 'verified'")
     old_verified = previous[previous.product_url.isin(verified.product_url)]
     changes = detect_changes(old_verified, verified)

@@ -16,7 +16,9 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from src.collectors import foodbasics, loblaws, metro, nofrills, sobeys, walmart
-from src.collectors import walmart_maintenance
+from src.collectors import walmart_maintenance, nofrills_maintenance
+
+MAINTENANCE = {"walmart": walmart_maintenance, "nofrills": nofrills_maintenance}
 from src.collectors.common import DEFAULT_SEARCH_TERMS
 from src.integration import integrate_price_frames, save_integration_outputs
 
@@ -164,7 +166,7 @@ def detect_changes(previous, current):
         "new_products", "disappeared_products", "price_increases", "price_decreases",
         "sales_starting", "sales_ending", "multi_buy_changes", "availability_changes",
         "package_changes",
-        "average_package_changes", "unit_average_discrepancies",
+        "average_package_changes", "unit_average_discrepancies", "conditional_offer_changes",
     )}
 
     def details(row):
@@ -198,7 +200,8 @@ def detect_changes(previous, current):
              and bool(after.get("listed_unit", ""))),
         ):
             a, b = pd.to_numeric([before.get(price_field), after.get(price_field)], errors="coerce")
-            if compatible and pd.notna(a) and pd.notna(b) and a != b:
+            conditional = any(r.get("conditional_offer_terms") not in (None, "") for r in (before, after))
+            if compatible and not conditional and pd.notna(a) and pd.notna(b) and a != b:
                 report["price_increases" if b > a else "price_decreases"].append(
                     {**info, "field": price_field, "before": float(a), "after": float(b)}
                 )
@@ -211,6 +214,7 @@ def detect_changes(previous, current):
             ("multi_buy_changes", ("multi_buy_quantity", "multi_buy_unit_price", "single_item_price",
                                    "sale_status", "promotion_text")),
             ("availability_changes", ("availability",)),
+            ("conditional_offer_changes", ("conditional_offer_terms", "purchase_limit", "after_limit_price")),
         ):
             if name == "multi_buy_changes" and not has_multi_buy:
                 continue
@@ -435,15 +439,16 @@ def guide_captures(key, folder, cycle, *, freshness_window=3, input_fn=input,
 def collect_store(key, capture_root, cycle, *, prompt=True, input_fn=input,
                   freshness_window=3, open_browser=False, opener=None, previous_rows=None):
     """Delegate pricing/classification unchanged; browser stores never use HTTP."""
-    if key == "walmart":
+    if key in MAINTENANCE:
+        maintenance = MAINTENANCE[key]
         if previous_rows is None:
-            raise ValueError("Walmart maintenance requires the existing snapshot rows.")
+            raise ValueError(f"{key} maintenance requires the existing snapshot rows.")
         folder = capture_root / key
         if prompt:
-            walmart_maintenance.guide_captures(
+            maintenance.guide_captures(
                 previous_rows, folder, cycle, freshness_window=freshness_window,
                 input_fn=input_fn, open_browser=open_browser, opener=opener)
-        return walmart_maintenance.refresh_rows(previous_rows, folder, cycle, freshness_window)
+        return maintenance.refresh_rows(previous_rows, folder, cycle, freshness_window)
     collector = getattr(STORES[key][1], f"collect_{key}_listings")
     folder = capture_root / key
     if prompt:
@@ -492,16 +497,17 @@ def dry_run(data_dir, capture_root, cycle, selected, rebuild, destination, fresh
         print(f"WARNING: {warning}")
     errors = []
     for key in selected:
-        if key == "walmart":
-            rows = walmart_maintenance.refresh_rows(
+        if key in MAINTENANCE:
+            maintenance = MAINTENANCE[key]
+            rows = maintenance.refresh_rows(
                 frames[key].astype(object).where(pd.notna(frames[key]), None).to_dict("records"),
                 capture_root / key, cycle, freshness_window)
-            summary = walmart_maintenance.verification_summary(rows)
-            print(f"Walmart: browser product maintenance, Stockyards 1004; {summary['verified']}/{summary['total']} captures ready.")
+            summary = maintenance.verification_summary(rows)
+            print(f"{key}: browser product maintenance, {maintenance.STORE_CONTEXT} {maintenance.STORE_ID}; {summary['verified']}/{summary['total']} audit rows ready.")
             for failure in summary["failures"]:
                 print(f"  Not ready: {failure['product_url']}: {failure['reason']}")
             if summary["failed"]:
-                errors.append(f"walmart: not ready ({summary['failed']} unverified product captures).")
+                errors.append(f"{key}: not ready ({summary['failed']} unverified product captures).")
             else:
                 frames[key] = pd.DataFrame(rows)
             continue
@@ -596,16 +602,16 @@ def run_refresh(*, root=ROOT, store=None, rebuild=False, dry=False,
                                          freshness_window=freshness_window, open_browser=open_browser,
                                          opener=opener, previous_rows=previous[key].astype(object).where(pd.notna(previous[key]), None).to_dict("records"))
                 path = stage / STORE_FILES[key]
-                saver = walmart_maintenance if key == "walmart" else STORES[key][1]
+                saver = MAINTENANCE.get(key, STORES[key][1])
                 saver.save_listings(listings, path)
                 frames[key] = pd.read_csv(path)
-                if key == "walmart":
-                    verification = walmart_maintenance.verification_summary(listings)
-                    print("Walmart staged verification: " + json.dumps(verification))
-                    shutil.copy2(path, destination / "walmart_staged_review.csv")
-                    (destination / "walmart_verification.json").write_text(
+                if key in MAINTENANCE:
+                    verification = saver.verification_summary(listings)
+                    print(f"{key} staged verification: " + json.dumps(verification))
+                    shutil.copy2(path, destination / f"{key}_staged_review.csv")
+                    (destination / f"{key}_verification.json").write_text(
                         json.dumps(verification, indent=2) + "\n", encoding="utf-8")
-                    walmart_maintenance.require_verified(listings)
+                    saver.require_verified(listings)
                 validate_freshness({key: frames[key]}, cycle, freshness_window)
                 metrics = quality_metrics(frames[key])
                 if metrics["optimizer_ready"] == 0:

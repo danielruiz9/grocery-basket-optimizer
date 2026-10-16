@@ -247,6 +247,11 @@ def _classify_bread(normalized_name, tokens):
 
 
 def _classify_pasta(normalized_name, tokens):
+    # "&" is removed during normalization. Recognize prepared mac-and-cheese
+    # before the pasta-token gate so abbreviated names cannot fall into cheese.
+    if re.search(r"\b(?:mac|macaroni)\s+(?:(?:and|n)\s+)?cheese\b", normalized_name):
+        return _unknown_classification()
+
     if not PASTA_TERMS & tokens:
         return None
 
@@ -335,6 +340,7 @@ def _classify_produce(normalized_name, tokens):
             "frozen", "iqf", "puree", "smoothie", "blend",
             "dessert", "desserts", "yogurt", "yoghurt",
             "drink", "drinks", "mix", "mixes",
+            "cheese", "spread", "spreadable",
         }
 
         if excluded_forms & tokens:

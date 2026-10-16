@@ -21,8 +21,7 @@ from bs4 import BeautifulSoup
 from src.collectors.common import (
     DEFAULT_SEARCH_TERMS,
     QUALITY_OUTPUT_COLUMNS,
-    normalize_listing_with_quality_checks as normalize_listing,
-    normalize_listings_with_quality_checks as normalize_listings,
+    normalize_listing_with_quality_checks as _normalize_listing,
     save_listings as _save_listings,
 )
 
@@ -42,7 +41,57 @@ DEFAULT_HEADERS = {
     ),
     "Accept-Language": "en-CA,en;q=0.9",
 }
-NOFRILLS_OUTPUT_COLUMNS = QUALITY_OUTPUT_COLUMNS
+NOFRILLS_OUTPUT_COLUMNS = (*QUALITY_OUTPUT_COLUMNS,
+    "availability", "availability_evidence", "product_id", "promotion_text",
+    "promotion_details", "sale_expiry", "conditional_offer_terms",
+    "purchase_limit", "after_limit_price", "single_item_price")
+
+
+def normalize_listing(listing):
+    """Keep conditional offers auditable, without pricing them as unlimited."""
+    row = _normalize_listing(listing)
+    if listing.get("conditional_offer_terms"):
+        row["normalization_error"] = "; ".join(filter(None, [
+            row.get("normalization_error"),
+            "Quantity-limited promotion has no independently verified unconditional price."
+        ]))
+        row["price_per_standard_unit"] = None
+    return row
+
+
+def normalize_listings(listings):
+    return [normalize_listing(row) for row in listings]
+
+
+def _search_evidence(tile):
+    """Only explicit inventory evidence; missing badges do not establish stock."""
+    indicator = tile.get("inventoryIndicator")
+    indicator = indicator if isinstance(indicator, dict) else {}
+    by_code = {"OUT": "out_of_stock", "LOW": "low_in_stock", "IN": "in_stock"}.get(
+        str(indicator.get("indicatorId", "")).upper())
+    by_text = {"out of stock": "out_of_stock", "low stock": "low_in_stock",
+               "in stock": "in_stock"}.get(str(indicator.get("text", "")).strip().lower())
+    availability = ("unknown" if by_code and by_text and by_code != by_text
+                    else by_code or by_text or "unknown")
+    deal = tile.get("deal") or {}
+    terms = str(deal.get("text") or "").strip()
+    limited = ("LIMIT" in {str(deal.get("type", "")).upper(), str(deal.get("name", "")).upper()}
+               or re.search(r"\blimit\b", terms, re.I) is not None)
+    limit = re.search(r"\blimit\s+(\d+)\b", terms, re.I)
+    after = re.search(r"after\s+limit\s*\$\s*(\d+(?:\.\d+)?)", terms, re.I)
+    return {
+        "product_id": tile.get("productId"),
+        "availability": availability,
+        "availability_evidence": json.dumps(indicator, sort_keys=True) if indicator else None,
+        "promotion_text": terms or None,
+        "promotion_details": json.dumps({k: tile.get(k) for k in ("deal", "mopDeal", "pcoDeal")}, sort_keys=True),
+        "sale_expiry": deal.get("expiryDate"),
+        "conditional_offer_terms": (terms or "LIMIT offer; detailed terms unavailable") if limited else None,
+        "purchase_limit": int(limit[1]) if limited and limit else None,
+        "after_limit_price": float(after[1]) if limited and after else None,
+        # Neither wasPrice nor an after-limit price verifies an unconditional offer.
+        "single_item_price": None,
+    }
 
 _NUMBER_PATTERN = r"[0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?"
 _MULTIPACK_PATTERN = re.compile(
@@ -279,6 +328,8 @@ def parse_product_tiles(
                     displayed_price if sale_status is not None else None
                 ),
                 "regular_price": regular_price,
+                # Loblaws reuses this low-level parser; retain its existing behavior.
+                **(_search_evidence(tile) if store == "No Frills Canada" else {}),
             }
         )
 
