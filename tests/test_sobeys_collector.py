@@ -227,6 +227,22 @@ def test_title_weight_fallback_and_structured_weight_conflict(capture):
     ]
 
 
+def test_span_prices_keep_variable_rates_and_unknown_stock():
+    from src.collectors.sobeys import parse_search_results
+    html = (Path(__file__).parent / "fixtures" / "sobeys_span_prices.html").read_text()
+    chicken, pasta, missing = parse_search_results(html, "chicken breast", "2026-10-26")
+    assert chicken["is_variable_weight"] is True
+    assert chicken["listed_unit_price"] == 24.89
+    assert chicken["listed_unit"] == "kg"
+    assert chicken["package_size"] is None
+    assert chicken["availability"] == "unknown"
+    assert pasta["displayed_price"] == 2.5
+    assert pasta["regular_price"] == 3.0
+    assert pasta["sale_status"] == "sale"
+    assert pasta["availability"] == "out_of_stock"
+    assert missing["displayed_price"] is None
+
+
 def test_rendered_html_card_extraction_is_scoped_and_deterministic():
     html = """
     <aside><div data-id="noise"><span>not a product</span></div></aside>

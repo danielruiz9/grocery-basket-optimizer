@@ -32,12 +32,33 @@ def _row(
         "standardized_unit": standardized_unit,
         "price_per_standard_unit": price,
         "normalization_error": normalization_error,
+        "displayed_price": 5.0,
+        "package_size": 1.0,
+        "package_unit": "kg",
     }
     row.update(extra)
     return row
 
 
 class TestCrossStoreIntegration(unittest.TestCase):
+
+    def test_uncostable_rows_remain_auditable_but_not_ready(self):
+        valid = _row("Test", "https://example.test/good", "Apples", "fresh_apples")
+        rows = [valid]
+        for index, changes in enumerate((
+            {"package_size": None},
+            {"displayed_price": None},
+            {"price_per_standard_unit": float("inf")},
+            {"is_variable_weight": True, "listed_unit_price": None},
+            {"conditional_offer_terms": "$1 limit 6 then $2"},
+            {"sale_expiry": "2026-09-18"},
+            {"multi_buy_quantity": 2, "multi_buy_unit_price": -1, "single_item_price": 5},
+        )):
+            rows.append({**valid, "product_url": f"https://example.test/{index}", **changes})
+        result = integrate_price_frames([pd.DataFrame(rows)])
+        self.assertEqual(len(result.combined), 8)
+        self.assertEqual(len(result.optimizer_ready), 1)
+        self.assertEqual(result.combined.costing_error.notna().sum(), 7)
 
     def test_aligns_deduplicates_and_filters_without_dropping_warnings(self):
         walmart = pd.DataFrame(

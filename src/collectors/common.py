@@ -79,7 +79,9 @@ def _standardized_unit(listing):
 def normalize_listing(listing):
     """Add classification and standardized pricing to one raw listing."""
     normalized = dict(listing)
-    classification = classify_product(listing.get("product_title"))
+    classification = classify_product(
+        listing.get("product_title"), listing.get("product_url")
+    )
     normalized.update(classification)
     # Fixed measured apple packages are not loose, per-weight purchases.
     # Without an explicit bag label, use the less specific "packaged" form.

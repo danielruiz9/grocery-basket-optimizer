@@ -180,7 +180,7 @@ def test_quality_counts_reuse_eligibility_rules():
     ])
     metrics = refresh.quality_metrics(frame)
     assert metrics["rows"] == 4
-    assert metrics["optimizer_ready"] == 2
+    assert metrics["optimizer_ready"] == 1  # Conditional-only row cannot be costed.
     assert metrics["sale_promo_rows"] == 2
     assert metrics["multi_buy_rows"] == metrics["warnings"] == metrics["normalization_errors"] == 1
     assert metrics["availability"]["out_of_stock"] == 1

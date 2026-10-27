@@ -18,8 +18,8 @@ class TestProductClassification(unittest.TestCase):
         for title, group in (
             ("Gala Apples, 4 lb bag", "fresh_apples"),
             ("Royal Gala Apples", "fresh_apples"),
-            ("Original Cheese Snacks 6P", "cheese_unspecified_type"),
-            ("Gouda Taste Cheese Snacks 6P", "cheese_unspecified_type"),
+            ("Original Cheese Snacks 6P", "unsupported"),
+            ("Gouda Taste Cheese Snacks 6P", "unsupported"),
         ):
             with self.subTest(title=title):
                 self.assertEqual(classify_product(title)["comparison_group"], group)
@@ -123,7 +123,7 @@ class TestProductClassification(unittest.TestCase):
             ("Cheddar-Style Processed Cheese Slices", "processed_cheese"),
             ("Thin Sliced Process Cheese Mozzarella", "processed_cheese"),
             ("Cracker Barrel Shredded Old Cheddar", "cheddar_cheese"),
-            ("Nibblers Original Natural Cheese Snacks", "cheese_unspecified_type"),
+            ("Nibblers Original Natural Cheese Snacks", "unsupported"),
         ):
             with self.subTest(title=title):
                 self.assertEqual(classify_product(title)["comparison_group"], group)

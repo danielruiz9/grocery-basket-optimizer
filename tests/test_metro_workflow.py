@@ -37,19 +37,19 @@ def test_four_store_basket_uses_checkout_costs_and_threshold(prices):
     result = optimize_real_price_basket(basket, prices=prices, savings_threshold=5)
     assert len(result["store_coverage"]) == 4
     assert result["best_single"]["stores"] == ("Metro Canada",)
-    assert result["best_single"]["total_cost"] == pytest.approx(31.65)
-    assert result["best_pair"]["stores"] == ("Metro Canada", "Walmart Canada")
-    assert result["best_pair"]["total_cost"] == pytest.approx(29.46)
-    assert result["savings"] == pytest.approx(2.19)
+    assert result["best_single"]["total_cost"] == pytest.approx(33.45)
+    assert result["best_pair"]["stores"] == ("Food Basics Canada", "Metro Canada")
+    assert result["best_pair"]["total_cost"] == pytest.approx(28.87)
+    assert result["savings"] == pytest.approx(4.58)
     assert result["recommended_option"] == result["best_single"]
-    for threshold, worth_it in ((2.00, True), (2.19, True), (2.20, False)):
+    for threshold, worth_it in ((4.00, True), (4.58, True), (4.59, False)):
         option = optimize_real_price_basket(
             basket, prices=prices, savings_threshold=threshold
         )
         assert option["worth_it"] is worth_it
     plan = result["best_single"]["shopping_plan"]
-    assert [item["package_count"] for item in plan] == [None, 1, None, 1, 1]
-    assert sum(item["estimated_item_cost"] for item in plan) == pytest.approx(31.65)
+    assert [item["package_count"] for item in plan] == [None, 1, 1, 1, 1]
+    assert sum(item["estimated_item_cost"] for item in plan) == pytest.approx(33.45)
     assert all(item["product_url"].startswith("https://www.metro.ca/") for item in plan)
 
 

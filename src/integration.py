@@ -2,8 +2,11 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+import math
+import re
 
 import pandas as pd
+from src.basket_costing import estimate_product_cost
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +57,7 @@ SUPERSET_COLUMNS = (
     "availability",
     "product_id",
     "store_context",
+    "costing_error",
 )
 DEDUPLICATION_COLUMNS = (
     "store",
@@ -220,7 +224,46 @@ def build_optimizer_ready(combined):
     ].copy()
 
     validate_comparison_group_units(optimizer_ready)
+    errors = pd.Series(
+        [_costing_error(row) for _, row in optimizer_ready.iterrows()],
+        index=optimizer_ready.index, dtype=object,
+    )
+    combined["costing_error"] = errors.reindex(combined.index)
+    optimizer_ready["costing_error"] = errors
+    optimizer_ready = optimizer_ready.loc[errors.isna()].copy()
     return _sort_prices(optimizer_ready)
+
+
+def _costing_error(row):
+    """Fail closed using the checkout-costing rules, not normalized scores."""
+    try:
+        value = float(row["price_per_standard_unit"])
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Normalized price must be finite and non-negative.")
+        terms = row.get("conditional_offer_terms")
+        if pd.notna(terms) and str(terms).strip():
+            raise ValueError("Quantity-limited offer requires independently verified unconditional pricing.")
+        expiry = row.get("sale_expiry")
+        if pd.notna(expiry) and str(expiry).strip():
+            observed = pd.to_datetime(row["date_observed"], utc=True).date()
+            short_date = re.fullmatch(r"Exp\.\s*(\d{1,2})/(\d{1,2})", str(expiry), re.I)
+            if short_date:
+                # Do not assume a next-year rollover for a yearless expiry.
+                expiry = f"{observed.year}-{int(short_date[1]):02d}-{int(short_date[2]):02d}"
+            if pd.to_datetime(expiry, utc=True).date() < observed:
+                raise ValueError("Promotion expired before observation; current price requires verification.")
+        plan = estimate_product_cost(row, 1, row["standardized_unit"])
+        if not math.isfinite(plan["estimated_item_cost"]):
+            raise ValueError("Estimated cost must be finite.")
+        quantity = row.get("multi_buy_quantity")
+        if pd.notna(quantity):
+            # Exercise the qualified branch as well as the single-unit branch.
+            plan = estimate_product_cost(row, float(quantity) * float(row["package_size"]), row["package_unit"])
+            if not math.isfinite(plan["estimated_item_cost"]):
+                raise ValueError("Qualified multi-buy cost must be finite.")
+    except (ValueError, TypeError, OverflowError) as exc:
+        return str(exc)
+    return None
 
 
 def integrate_price_frames(datasets):

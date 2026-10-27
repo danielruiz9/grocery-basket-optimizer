@@ -271,6 +271,19 @@ def _extract_rendered_records(html):
             ),
             None,
         )
+        if price_text is None:
+            # Newer rendered cards put the price in spans immediately before
+            # the package paragraph. Do not read the package's unit-rate text
+            # as a checkout price or search unrelated card controls.
+            package_node = next(
+                (node for node in card.select("p")
+                 if node.get_text(" ", strip=True) == package_text), None
+            )
+            price_node = package_node.find_previous_sibling("div") if package_node else None
+            if price_node is not None:
+                candidate = price_node.get_text(" ", strip=True)
+                if "$" in candidate:
+                    price_text = candidate
         promotion_text = next(
             (text for text in paragraphs if text.lower().startswith("buy ")),
             None,
@@ -291,7 +304,9 @@ def _extract_rendered_records(html):
                 "availability": (
                     "out_of_stock"
                     if "out of stock" in card.get_text(" ", strip=True).lower()
-                    else "in_stock"
+                    else ("in_stock" if re.search(
+                        r"\bin stock\b", card.get_text(" ", strip=True), re.I
+                    ) else "unknown")
                 ),
             }
         )

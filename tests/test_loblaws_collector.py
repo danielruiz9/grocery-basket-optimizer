@@ -136,12 +136,12 @@ def test_every_captured_title_has_reviewed_classification(capture):
             "fresh_bananas", "unsupported", "fresh_bananas", "unsupported",
             "fresh_plantains", "unsupported", "fresh_bananas", "unsupported"],
         "pasta": ["unsupported"] + ["dry_pasta"] * 10 + ["unsupported"],
-        "bread": ["artisan_bread", "sliced_bread", "cheese_unspecified_type",
+        "bread": ["artisan_bread", "sliced_bread", "unsupported",
             "artisan_bread", "sliced_bread", "unsupported", "sliced_bread",
             "sliced_bread", "sliced_bread", "unsupported", "sliced_bread", "unsupported"],
         "cheese": ["unsupported", "marble_cheese", "unsupported",
             "unsupported", "cheddar_cheese", "unsupported", "cheddar_cheese",
-            "unsupported", "marble_cheese", "cheese_unspecified_type",
+            "unsupported", "marble_cheese", "unsupported",
             "cheddar_cheese", "mozzarella_cheese"],
     }
     rows = collect_capture(capture)

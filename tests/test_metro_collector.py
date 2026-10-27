@@ -238,9 +238,8 @@ def test_metro_snapshot_excludes_prepared_food_and_has_consistent_units():
         Path(__file__).resolve().parents[1] / "data" / "metro_prices_normalized.csv"
     )
     prepared_titles = {
-        "Oven Roasted Chicken Breast Strips",
-        "Cajun Chicken Breast Roast",
-        "Banana Ice Cream with Fudge Chunks and Walnuts, Chunky Monkey",
+        "Chicken Breast Strips",
+        "Banana Teething Wafers, Baby Mum-Mum",
         "Naan Bread",
     }
     assert prepared_titles <= set(frame.product_title)

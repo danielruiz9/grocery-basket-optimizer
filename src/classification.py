@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from urllib.parse import urlsplit
 
 
 ATTRIBUTE_PATTERNS = (
@@ -131,12 +132,12 @@ def _classify_chicken_breast(normalized_name, tokens):
         "cooked", "coocked", "roast", "roasted", "rotisserie", "grilled",
         "smoked", "prepared", "stuffed", "souvlaki", "sandwich", "salad",
         "soup", "sauce", "meal", "meals", "seasoned", "flavoured",
-        "flavored", "marinated", "bbq", "barbecue",
+        "flavored", "marinated", "bbq", "barbecue", "buttermilk",
     } & tokens or PASTA_TERMS & tokens or any(
         phrase in normalized_name
         for phrase in (
             "ready to eat", "honey garlic", "montreal bbq", "stir fry",
-            "mumbai",
+            "mumbai", "italian style",
         )
     ):
         return _unknown_classification()
@@ -249,7 +250,7 @@ def _classify_bread(normalized_name, tokens):
 def _classify_pasta(normalized_name, tokens):
     # "&" is removed during normalization. Recognize prepared mac-and-cheese
     # before the pasta-token gate so abbreviated names cannot fall into cheese.
-    if re.search(r"\b(?:mac|macaroni)\s+(?:(?:and|n)\s+)?cheese\b", normalized_name):
+    if ({"mac", "macaroni"} & tokens and {"cheese", "cheddar"} & tokens) or re.search(r"\b(?:mac|macaroni)\s+(?:(?:and|n)\s+)?cheese\b", normalized_name):
         return _unknown_classification()
 
     if not PASTA_TERMS & tokens:
@@ -289,7 +290,7 @@ def _classify_eggs(normalized_name, tokens):
     if not {"egg", "eggs"} & tokens:
         return None
 
-    if {"boiled", "peeled", "pickled", "quail"} & tokens:
+    if {"boiled", "peeled", "pickled", "quail", "duck", "chocolate"} & tokens:
         return _unknown_classification()
 
     attributes = _extract_attributes(normalized_name)
@@ -341,6 +342,7 @@ def _classify_produce(normalized_name, tokens):
             "dessert", "desserts", "yogurt", "yoghurt",
             "drink", "drinks", "mix", "mixes",
             "cheese", "spread", "spreadable",
+            "oatmeal", "kombucha", "shake", "shakes",
         }
 
         if excluded_forms & tokens:
@@ -372,6 +374,8 @@ def _classify_produce(normalized_name, tokens):
             "custard",
             "pudding",
             "milkshake",
+            "brownie", "brownies", "wafer", "wafers", "teething",
+            "snack", "snacks", "shake", "shakes",
             "fried",
             "cooked",
             "flavor",
@@ -428,7 +432,7 @@ def _classify_cheese(normalized_name, tokens):
     if {
         "chips", "crisps", "puffs", "sauce",
         "soup", "dip", "sandwich", "sandwiches", "dessert", "desserts",
-        "crunchies", "baby", "toddler",
+        "crunchies", "baby", "toddler", "snack", "snacks", "dippers",
     } & tokens or (
         {"cracker", "crackers"} & tokens and "barrel" not in tokens
     ) or "cheese pizza" in normalized_name:
@@ -444,6 +448,9 @@ def _classify_cheese(normalized_name, tokens):
 
     if "cream cheese" in normalized_name:
         comparison_group = "cream_cheese"
+    elif "spreadable" in tokens:
+        # A spread is not interchangeable with ordinary block/sliced cheese.
+        return _unknown_classification()
     elif "cottage cheese" in normalized_name:
         comparison_group = "cottage_cheese"
     elif (
@@ -496,13 +503,21 @@ def _classify_cheese(normalized_name, tokens):
     )
 
 
-def classify_product(product_name):
+def classify_product(product_name, product_url=None):
     normalized_name = normalize_product_name(product_name)
 
     if not normalized_name:
         return _unknown_classification()
 
     tokens = set(normalized_name.split())
+    # Explicit prepared-food category evidence can disambiguate a plain title.
+    # Use path segments only, never a retailer name or URL query string.
+    categories = set(urlsplit(str(product_url or "")).path.lower().split("/"))
+    if (
+        "chicken" in tokens and {"breast", "breasts"} & tokens
+        and categories & {"deli-prepared-meals", "prepared-meals", "ready-meals-sides"}
+    ):
+        return _unknown_classification()
     classifiers = (
         _classify_chicken_breast,
         _classify_bread,

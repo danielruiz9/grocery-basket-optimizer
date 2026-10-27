@@ -33,15 +33,15 @@ def test_five_store_snapshot_deduplicates_without_losing_audit_rows(prices):
     inputs = load_normalized_datasets()
     assert len(inputs[-2]) == 84  # The raw Loblaws cross-search rows stay intact.
     result = integrate_price_frames(inputs[:-1])
-    assert result.duplicates_removed == 3
-    assert len(result.combined) == 396
-    assert len(result.optimizer_ready) == len(prices) == 304
+    assert result.duplicates_removed == 0
+    assert len(result.combined) == 400
+    assert len(result.optimizer_ready) == len(prices) == 268
     assert result.optimizer_ready.groupby("store").size().to_dict() == {
-        "Food Basics Canada": 66, "Loblaws Canada": 54, "Metro Canada": 71,
-        "No Frills Canada": 59, "Walmart Canada": 54,
+        "Food Basics Canada": 58, "Loblaws Canada": 48, "Metro Canada": 72,
+        "No Frills Canada": 47, "Walmart Canada": 43,
     }
-    assert len(result.combined.query('store == "Loblaws Canada"')) == 82
-    assert result.optimizer_ready.data_quality_warning.notna().sum() == 3
+    assert len(result.combined.query('store == "Loblaws Canada"')) == 84
+    assert result.optimizer_ready.data_quality_warning.notna().sum() == 1
     assert result.optimizer_ready.groupby("comparison_group").standardized_unit.nunique().eq(1).all()
     assert not prices.comparison_group.eq("unsupported").any()
     assert prices.normalization_error.isna().all()
@@ -51,33 +51,33 @@ def test_standard_basket_before_after_and_dollar_thresholds(prices):
     before = optimize_real_price_basket(
         basket(), prices=prices.loc[prices.store.ne("Loblaws Canada")]
     )
-    assert before["best_pair"]["total_cost"] == pytest.approx(29.46)
-    for threshold, worth_it in ((4, True), (4.10, True), (4.11, False), (5, False)):
+    assert before["best_pair"]["total_cost"] == pytest.approx(28.87)
+    for threshold, worth_it in ((3, True), (3.89, True), (3.90, False), (5, False)):
         result = optimize_real_price_basket(basket(), prices=prices, savings_threshold=threshold)
         assert len(result["store_coverage"]) == 5
-        assert result["best_single"]["stores"] == ("Metro Canada",)
-        assert result["best_single"]["total_cost"] == pytest.approx(31.65)
-        assert result["store_coverage"]["Loblaws Canada"]["total_cost"] == pytest.approx(33.77)
-        assert result["best_pair"]["stores"] == ("Loblaws Canada", "Walmart Canada")
-        assert result["best_pair"]["total_cost"] == pytest.approx(27.55)
-        assert result["savings"] == pytest.approx(4.10)
+        assert result["best_single"]["stores"] == ("Loblaws Canada",)
+        assert result["best_single"]["total_cost"] == pytest.approx(32.76)
+        assert result["store_coverage"]["Loblaws Canada"]["total_cost"] == pytest.approx(32.76)
+        assert result["best_pair"]["stores"] == ("Food Basics Canada", "Loblaws Canada")
+        assert result["best_pair"]["total_cost"] == pytest.approx(28.87)
+        assert result["savings"] == pytest.approx(3.89)
         assert result["worth_it"] is worth_it
         expected = result["best_pair"] if worth_it else result["best_single"]
         assert result["recommended_option"] == expected
     plan = result["best_pair"]["shopping_plan"]
-    assert [r["package_count"] for r in plan] == [None, 1, None, 1, 1]
-    assert [r["estimated_item_cost"] for r in plan] == pytest.approx([16.14, 4.44, 2.20, 2.29, 2.48])
+    assert [r["package_count"] for r in plan] == [None, 1, 1, 1, 1]
+    assert [r["estimated_item_cost"] for r in plan] == pytest.approx([16.50, 4.98, 2.94, 1.97, 2.48])
     assert all(r["product_url"].startswith("https://www.loblaws.ca/") for r in plan if r["store"] == "Loblaws Canada")
 
 
 def test_loblaws_single_store_recommendation_and_one_store_mode(prices):
     eggs = optimize_real_price_basket([item("large_eggs", 18, "count")], prices=prices, max_stores=1)
-    assert eggs["recommended_option"]["stores"] == ("Loblaws Canada",)
-    assert eggs["best_single"]["total_cost"] == pytest.approx(4.44)
+    assert eggs["recommended_option"]["stores"] == ("Food Basics Canada",)
+    assert eggs["best_single"]["total_cost"] == pytest.approx(4.98)
     assert eggs["best_pair"] is None
     result = optimize_real_price_basket(basket(), prices=prices, max_stores=1, savings_threshold=0)
     assert result["best_pair"] is None
-    assert result["recommended_option"]["stores"] == ("Metro Canada",)
+    assert result["recommended_option"]["stores"] == ("Loblaws Canada",)
 
 
 def test_loblaws_pair_only_sparse_coverage_and_unfulfillable_basket(prices):
@@ -96,8 +96,8 @@ def test_loblaws_pair_only_sparse_coverage_and_unfulfillable_basket(prices):
 def test_tied_pasta_choices_are_deterministic(prices):
     first = optimize_real_price_basket(basket(), prices=prices, savings_threshold=4)
     pasta = first["best_pair"]["shopping_plan"][3]
-    assert pasta["store"] == "Loblaws Canada"
-    assert pasta["product_title"] == "Cavatappi"
+    assert pasta["store"] == "Food Basics Canada"
+    assert pasta["product_title"] == "Elbow Macaroni Pasta"
     for seed in (1, 7, 42):
         shuffled = optimize_real_price_basket(basket(), prices=prices.sample(frac=1, random_state=seed), savings_threshold=4)
         for key in ("best_single", "best_pair", "recommended_option"):
@@ -109,10 +109,10 @@ def test_streamlit_five_store_labels_snapshot_date_and_single_store_flow():
 
     app = AppTest.from_file(str(ROOT / "app.py")).run()
     assert not app.exception
-    assert any("Prices last updated: 2026-09-20" in c.value for c in app.caption)
+    assert any("Prices last updated: 2026-10-26" in c.value for c in app.caption)
     app.multiselect[0].set_value(["large_eggs"]).run()
     app.radio[0].set_value(1).run()
     app.button[0].click().run()
     assert not app.exception
-    assert any("Shop at Loblaws" in s.value and "4.44" in s.value for s in app.success)
+    assert any("Shop at Food Basics" in s.value and "4.98" in s.value for s in app.success)
     assert all("Loblaws Canada" not in s.value for s in app.success)

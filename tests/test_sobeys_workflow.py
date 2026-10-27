@@ -37,16 +37,16 @@ def test_six_store_snapshot_preserves_audit_and_filters_availability(prices):
 
     assert len(inputs) == 6
     assert len(inputs[-1]) == 84
-    assert result.duplicates_removed == 3
-    assert len(result.combined) == 480
-    assert len(result.optimizer_ready) == len(prices) == 363
+    assert result.duplicates_removed == 0
+    assert len(result.combined) == 484
+    assert len(result.optimizer_ready) == len(prices) == 328
     assert result.optimizer_ready.groupby("store").size().to_dict() == {
-        "Food Basics Canada": 66,
-        "Loblaws Canada": 54,
-        "Metro Canada": 71,
-        "No Frills Canada": 59,
-        "Sobeys Canada": 59,
-        "Walmart Canada": 54,
+        "Food Basics Canada": 58,
+        "Loblaws Canada": 48,
+        "Metro Canada": 72,
+        "No Frills Canada": 47,
+        "Sobeys Canada": 60,
+        "Walmart Canada": 43,
     }
 
     audit_sobeys = result.combined.loc[
@@ -57,11 +57,11 @@ def test_six_store_snapshot_preserves_audit_and_filters_availability(prices):
     ]
     assert len(audit_sobeys) == 84
     assert audit_sobeys.availability.value_counts().to_dict() == {
-        "in_stock": 79,
+        "unknown": 79,
         "out_of_stock": 5,
     }
-    assert len(ready_sobeys) == 59
-    assert set(ready_sobeys.availability) == {"in_stock"}
+    assert len(ready_sobeys) == 60
+    assert set(ready_sobeys.availability) == {"unknown"}
     assert audit_sobeys.product_id.notna().all()
     assert audit_sobeys.store_context.nunique() == 1
     assert "Sobeys Urban Fresh Spadina" in audit_sobeys.store_context.iloc[0]
@@ -72,15 +72,25 @@ def test_six_store_snapshot_preserves_audit_and_filters_availability(prices):
         & audit_sobeys.price_per_standard_unit.notna()
     ]
     assert len(eligible_before_availability) == 61
-    assert eligible_before_availability.availability.eq("out_of_stock").sum() == 2
-    assert ready_sobeys.data_quality_warning.notna().sum() == 2
+    assert eligible_before_availability.availability.eq("out_of_stock").sum() == 1
+    assert ready_sobeys.data_quality_warning.notna().sum() == 0
     assert result.optimizer_ready.groupby(
         "comparison_group"
     ).standardized_unit.nunique().eq(1).all()
 
 
 def test_sobeys_apple_fallback_and_warning_survive_integration():
-    audit = pd.read_csv(ROOT / "data" / "all_stores_prices_normalized.csv")
+    # Keep this regression tied to the saved capture containing these products;
+    # weekly search-result churn must not remove coverage of either safeguard.
+    import json
+    from src.collectors.sobeys import collect_sobeys_listings, capture_records
+    capture = json.loads((ROOT / "tests/fixtures/sobeys_search_results.json").read_text())
+    rows = collect_sobeys_listings(
+        observed_date=capture["observed_date"], delay_seconds=0,
+        store_context=capture["store_context"],
+        fetcher=lambda term: json.dumps({"records": capture_records(capture, term)}),
+    )
+    audit = integrate_price_frames([pd.DataFrame(rows)]).combined
     paula = audit.loc[
         audit.product_title.eq("Paula Apples Red 3 lb")
         & audit.store.eq("Sobeys Canada")
@@ -114,17 +124,17 @@ def test_standard_basket_is_unchanged_after_sobeys(prices):
     )
 
     assert before["best_single"]["stores"] == after["best_single"]["stores"] == (
-        "Metro Canada",
+        "Loblaws Canada",
     )
-    assert before["best_single"]["total_cost"] == pytest.approx(31.65)
-    assert after["best_single"]["total_cost"] == pytest.approx(31.65)
+    assert before["best_single"]["total_cost"] == pytest.approx(32.76)
+    assert after["best_single"]["total_cost"] == pytest.approx(32.76)
     assert before["best_pair"]["stores"] == after["best_pair"]["stores"] == (
-        "Loblaws Canada", "Walmart Canada",
+        "Food Basics Canada", "Loblaws Canada",
     )
-    assert before["best_pair"]["total_cost"] == pytest.approx(27.55)
-    assert after["best_pair"]["total_cost"] == pytest.approx(27.55)
+    assert before["best_pair"]["total_cost"] == pytest.approx(28.87)
+    assert after["best_pair"]["total_cost"] == pytest.approx(28.87)
     assert after["store_coverage"]["Sobeys Canada"]["total_cost"] == pytest.approx(
-        52.085
+        50.365
     )
     assert after["recommended_option"] == after["best_single"]
 
@@ -136,19 +146,19 @@ def test_sobeys_single_pair_threshold_and_one_store_mode(prices):
     )
     assert one_store["best_pair"] is None
     assert one_store["recommended_option"]["stores"] == ("Sobeys Canada",)
-    assert one_store["recommended_option"]["total_cost"] == pytest.approx(3.29)
+    assert one_store["recommended_option"]["total_cost"] == pytest.approx(3.438)
 
     basket = cheese + [item("large_eggs", 18, "count")]
     low_threshold = optimize_real_price_basket(
-        basket, prices=prices, savings_threshold=1.71
+        basket, prices=prices, savings_threshold=0.01
     )
-    assert low_threshold["best_single"]["stores"] == ("Loblaws Canada",)
-    assert low_threshold["best_single"]["total_cost"] == pytest.approx(9.44)
+    assert low_threshold["best_single"]["stores"] == ("Sobeys Canada",)
+    assert low_threshold["best_single"]["total_cost"] == pytest.approx(8.428)
     assert low_threshold["best_pair"]["stores"] == (
-        "Loblaws Canada", "Sobeys Canada",
+        "Food Basics Canada", "Sobeys Canada",
     )
-    assert low_threshold["best_pair"]["total_cost"] == pytest.approx(7.73)
-    assert low_threshold["savings"] == pytest.approx(1.71)
+    assert low_threshold["best_pair"]["total_cost"] == pytest.approx(8.418)
+    assert low_threshold["savings"] == pytest.approx(0.01)
     assert low_threshold["worth_it"] is True
     assert low_threshold["recommended_option"] == low_threshold["best_pair"]
 
@@ -171,9 +181,9 @@ def test_sobeys_pair_only_sparse_coverage(prices):
     assert result["best_single"] is None
     assert result["savings"] is None
     assert result["recommended_option"]["stores"] == (
-        "Loblaws Canada", "Sobeys Canada",
+        "Food Basics Canada", "Loblaws Canada",
     )
-    assert result["recommended_option"]["total_cost"] == pytest.approx(20.07)
+    assert result["recommended_option"]["total_cost"] == pytest.approx(23.16)
     with pytest.raises(ValueError, match="No single store"):
         optimize_real_price_basket(basket, prices=prices, max_stores=1)
 
@@ -184,7 +194,7 @@ def test_six_store_results_and_product_links_are_deterministic(prices):
         item("large_eggs", 18, "count"),
     ]
     first = optimize_real_price_basket(
-        basket, prices=prices, savings_threshold=1.71
+        basket, prices=prices, savings_threshold=0.01
     )
     sobeys_items = [
         row for row in first["recommended_option"]["shopping_plan"]
@@ -199,7 +209,7 @@ def test_six_store_results_and_product_links_are_deterministic(prices):
         shuffled = optimize_real_price_basket(
             basket,
             prices=prices.sample(frac=1, random_state=seed),
-            savings_threshold=1.71,
+            savings_threshold=0.01,
         )
         for key in ("best_single", "best_pair", "recommended_option"):
             assert shuffled[key] == first[key]
@@ -211,7 +221,7 @@ def test_streamlit_sobeys_label_snapshot_date_and_one_store_flow():
     app = AppTest.from_file(str(ROOT / "app.py")).run()
     assert not app.exception
     assert any(
-        "Prices last updated: 2026-09-20" in caption.value
+        "Prices last updated: 2026-10-26" in caption.value
         for caption in app.caption
     )
     assert any("Sobeys" in paragraph.value for paragraph in app.markdown)
@@ -223,8 +233,7 @@ def test_streamlit_sobeys_label_snapshot_date_and_one_store_flow():
 
     assert not app.exception
     assert any(
-        "Shop at Sobeys" in success.value and "3.29" in success.value
+        "Shop at Sobeys" in success.value and "3.44" in success.value
         for success in app.success
     )
     assert all("Sobeys Canada" not in success.value for success in app.success)
-
